@@ -82,3 +82,246 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .docs-content h1 {
+    @apply text-3xl font-semibold tracking-tight mb-4 mt-2 text-sidebar-primary;
+  }
+
+  .docs-content h2 {
+    @apply text-2xl font-semibold tracking-tight mt-8 mb-3 text-sidebar-primary;
+  }
+
+  .docs-content h3 {
+    @apply text-xl font-semibold mt-6 mb-2 text-sidebar-primary;
+  }
+
+  .docs-content p {
+    @apply text-lg md:text-xl leading-relaxed mb-4;
+  }
+
+  .docs-content ul,
+  .docs-content ol {
+    @apply mb-4 ml-5 list-disc space-y-1;
+  }
+
+  .docs-content li {
+    @apply text-base md:text-lg;
+  }
+
+  .docs-content a {
+    @apply text-primary underline-offset-2 hover:underline;
+  }
+
+  .docs-content code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-mono;
+  }
+
+  .docs-content pre {
+    @apply rounded-md bg-muted p-4 text-xs md:text-sm overflow-x-auto mb-4;
+  }
+
+  /* Dark mode adjustments for Swagger UI on the /api-docs page */
+  .dark #swagger-ui-root,
+  .dark #swagger-ui-root .swagger-ui {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .dark #swagger-ui-root .swagger-ui .topbar,
+  .dark #swagger-ui-root .swagger-ui .scheme-container,
+  .dark #swagger-ui-root .swagger-ui .info,
+  .dark #swagger-ui-root .swagger-ui .opblock-tag-section,
+  .dark #swagger-ui-root .swagger-ui .responses-wrapper,
+  .dark #swagger-ui-root .swagger-ui .model-box,
+  .dark #swagger-ui-root .swagger-ui table {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+  }
+
+  .dark #swagger-ui-root .swagger-ui .opblock,
+  .dark #swagger-ui-root .swagger-ui .opblock .opblock-section-header {
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--muted-foreground)) !important;
+  }
+
+  .dark #swagger-ui-root .swagger-ui .opblock-summary,
+  .dark #swagger-ui-root .swagger-ui .opblock-summary-control,
+  .dark #swagger-ui-root .swagger-ui .opblock-summary-path,
+  .dark #swagger-ui-root .swagger-ui .opblock-summary-description {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+  }
+
+  .dark #swagger-ui-root .swagger-ui .parameter__name,
+  .dark #swagger-ui-root .swagger-ui .parameter__type,
+  .dark #swagger-ui-root .swagger-ui .response-col_status,
+  .dark #swagger-ui-root .swagger-ui .response-col_description__inner,
+  .dark #swagger-ui-root .swagger-ui .prop-format,
+  .dark #swagger-ui-root .swagger-ui .prop-type {
+    color: hsl(var(--foreground));
+  }
+
+  .dark #swagger-ui-root .swagger-ui .btn,
+  .dark #swagger-ui-root .swagger-ui .btn.authorize,
+  .dark #swagger-ui-root .swagger-ui .opblock-body .btn.execute,
+  .dark #swagger-ui-root .swagger-ui .opblock-body .btn.cancel {
+    background-color: hsl(var(--sidebar-primary)) !important;
+    color: hsl(var(--sidebar-primary-foreground)) !important;
+    border-color: hsl(var(--sidebar-primary)) !important;
+  }
+
+  .dark #swagger-ui-root .swagger-ui .auth-wrapper .authorize,
+  .dark #swagger-ui-root .swagger-ui .schemes .authorize {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border: 2px solid hsl(var(--primary)) !important;
+    padding: 8px 16px !important;
+  }
+
+  .dark #swagger-ui-root .swagger-ui .auth-wrapper .authorize.unlocked,
+  .dark #swagger-ui-root .swagger-ui .schemes .authorize.unlocked {
+    background-color: hsl(var(--chart-2)) !important;
+    border-color: hsl(var(--chart-2)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  .dark #swagger-ui-root .swagger-ui .auth-wrapper .authorize.unlocked svg,
+  .dark #swagger-ui-root .swagger-ui .schemes .authorize.unlocked svg {
+    fill: hsl(var(--primary-foreground)) !important;
+  }
+
+  .dark #swagger-ui-root .swagger-ui .btn.authorize svg {
+    fill: hsl(var(--primary-foreground));
+  }
+
+  .dark #swagger-ui-root .swagger-ui .markdown code,
+  .dark #swagger-ui-root .swagger-ui .model,
+  .dark #swagger-ui-root .swagger-ui .highlight-code {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+  }
+
+  /* Make links stand out more in dark mode */
+  .dark #swagger-ui-root .swagger-ui a,
+  .dark #swagger-ui-root .swagger-ui a * {
+    color: hsl(var(--chart-2)) !important;
+  }
+
+  /* Increase border contrast inside Swagger tables and models */
+  .dark #swagger-ui-root .swagger-ui table,
+  .dark #swagger-ui-root .swagger-ui td,
+  .dark #swagger-ui-root .swagger-ui th,
+  .dark #swagger-ui-root .swagger-ui .model-box {
+    border-color: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Ensure all Swagger UI text is readable in dark mode */
+  .dark #swagger-ui-root .swagger-ui,
+  .dark #swagger-ui-root .swagger-ui h1,
+  .dark #swagger-ui-root .swagger-ui h2,
+  .dark #swagger-ui-root .swagger-ui h3,
+  .dark #swagger-ui-root .swagger-ui h4,
+  .dark #swagger-ui-root .swagger-ui h5,
+  .dark #swagger-ui-root .swagger-ui h6,
+  .dark #swagger-ui-root .swagger-ui p,
+  .dark #swagger-ui-root .swagger-ui li,
+  .dark #swagger-ui-root .swagger-ui td,
+  .dark #swagger-ui-root .swagger-ui th,
+  .dark #swagger-ui-root .swagger-ui span,
+  .dark #swagger-ui-root .swagger-ui label,
+  .dark #swagger-ui-root .swagger-ui small {
+    color: hsl(var(--foreground)) !important;
+  }
+
+  /* Broaden dark-mode CSS overrides for Swagger UI authorization modal */
+  .dark .swagger-ui .modal-ux-footer .btn.modal-btn.auth.authorize svg {
+    fill: hsl(var(--foreground)) !important;
+  }
+
+  .dark .backdrop-ux {
+    background: rgba(0, 0, 0, 0.65) !important;
+  }
+
+  .dark .modal-ux,
+  .dark .modal-ux-content,
+  .dark .modal-ux-header,
+  .dark .modal-ux-body,
+  .dark .modal-ux-footer {
+    background: hsl(var(--card)) !important;
+    color: hsl(var(--foreground)) !important;
+    border-color: hsl(var(--muted-foreground)) !important;
+  }
+
+  .dark .modal-ux-content {
+    border: 1px solid hsl(var(--muted-foreground)) !important;
+  }
+
+  .dark .modal-ux-body input,
+  .dark .modal-ux-body select,
+  .dark .modal-ux-body textarea {
+    background: hsl(var(--background)) !important;
+    color: hsl(var(--foreground)) !important;
+    border: 1px solid hsl(var(--muted-foreground)) !important;
+  }
+
+  .dark .modal-ux-footer .btn.modal-btn,
+  .dark .modal-ux-footer .btn.modal-btn.close-modal {
+    background: hsl(var(--sidebar-primary)) !important;
+    color: hsl(var(--sidebar-primary-foreground)) !important;
+    border-color: hsl(var(--sidebar-primary)) !important;
+  }
+
+  .dark .modal-ux-footer .btn.modal-btn.auth.authorize {
+    background: hsl(var(--chart-2)) !important;
+    color: hsl(var(--sidebar-primary-foreground)) !important;
+    border-color: hsl(var(--chart-2)) !important;
+  }
+
+  .dark .modal-ux-footer button.btn.modal-btn.auth.authorize,
+  .dark button.btn.modal-btn.auth.authorize {
+    background: hsl(var(--chart-2)) !important;
+    color: hsl(var(--sidebar-primary-foreground)) !important;
+    border-color: hsl(var(--chart-2)) !important;
+  }
+
+  /* Color-code HTTP status codes in Swagger responses */
+  #swagger-ui-root .swagger-ui .response-col_status.swagger-status-success,
+  .dark #swagger-ui-root .swagger-ui .response-col_status.swagger-status-success {
+    color: hsl(var(--chart-2)) !important;
+    font-weight: 600;
+  }
+
+  #swagger-ui-root .swagger-ui .response-col_status.swagger-status-error,
+  .dark #swagger-ui-root .swagger-ui .response-col_status.swagger-status-error {
+    color: hsl(var(--destructive)) !important;
+    font-weight: 600;
+  }
+
+  #swagger-ui-root .swagger-ui .response-col_status.swagger-status-warning,
+  .dark #swagger-ui-root .swagger-ui .response-col_status.swagger-status-warning {
+    color: hsl(var(--chart-4)) !important;
+    font-weight: 600;
+  }
+
+  /* Two-column layout for request/response sections in each operation */
+  @media (min-width: 1024px) {
+    #swagger-ui-root .swagger-ui .opblock-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    #swagger-ui-root .swagger-ui .opblock-body .opblock-section {
+      margin: 0;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 1023.98px) {
+    #swagger-ui-root .swagger-ui .opblock-body {
+      display: block;
+    }
+  }
+}

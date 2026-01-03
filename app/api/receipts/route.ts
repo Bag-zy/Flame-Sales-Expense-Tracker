@@ -1,19 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { getSessionUser } from '@/lib/api-auth';
+import { getApiOrSessionUser } from '@/lib/api-auth-keys';
+
+/**
+ * @swagger
+ * /api/receipts:
+ *   get:
+ *     operationId: listReceipts
+ *     tags:
+ *       - Receipts
+ *     summary: List receipts for expenses
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: project_id
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: cycle_id
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Receipts fetched successfully.
+ *       401:
+ *         description: API key required.
+ *   post:
+ *     operationId: createReceipt
+ *     tags:
+ *       - Receipts
+ *     summary: Create a receipt record linked to an expense
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               expense_id:
+ *                 type: integer
+ *                 nullable: true
+ *               file_path:
+ *                 type: string
+ *               raw_text:
+ *                 type: string
+ *                 nullable: true
+ *               structured_data:
+ *                 type: object
+ *                 nullable: true
+ *             required:
+ *               - file_path
+ *     responses:
+ *       200:
+ *         description: Receipt created successfully.
+ *       401:
+ *         description: API key required.
+ */
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
     const cycleId = searchParams.get('cycle_id');
     const search = searchParams.get('search');
+
+    if (user.role !== 'admin' && projectId) {
+      const access = await db.query(
+        `
+        SELECT 1
+          FROM project_assignments pa
+         WHERE pa.project_id = $1 AND pa.user_id = $2
+        UNION
+        SELECT 1
+          FROM project_assignments pa
+          JOIN team_members tm ON tm.team_id = pa.team_id
+         WHERE pa.project_id = $1 AND tm.user_id = $2
+         LIMIT 1
+        `,
+        [projectId, user.id],
+      );
+
+      if (!access.rows.length) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+    }
 
     let query = `
       SELECT r.id, r.expense_id, r.file_path, r.upload_date, r.organization_id, r.raw_text, r.structured_data
@@ -23,6 +109,16 @@ export async function GET(request: NextRequest) {
     `;
     const params: any[] = [organizationId];
     let paramIndex = 1;
+
+    if (user.role !== 'admin') {
+      paramIndex += 1;
+      query += ` AND e.project_id IN (
+        SELECT pa.project_id FROM project_assignments pa WHERE pa.user_id = $${paramIndex}
+        UNION
+        SELECT pa.project_id FROM project_assignments pa JOIN team_members tm ON tm.team_id = pa.team_id WHERE tm.user_id = $${paramIndex}
+      )`;
+      params.push(user.id);
+    }
 
     if (projectId) {
       paramIndex += 1;
@@ -58,14 +154,48 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     // DB schema now includes raw_text and structured_data
     const { expense_id, file_path, raw_text, structured_data } = await request.json();
+
+    if (user.role !== 'admin') {
+      if (!expense_id) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+
+      const exp = await db.query(
+        'SELECT project_id FROM expenses WHERE id = $1 AND organization_id = $2',
+        [expense_id, organizationId],
+      );
+      const project_id = exp.rows[0]?.project_id;
+      if (!project_id) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+
+      const access = await db.query(
+        `
+        SELECT 1
+          FROM project_assignments pa
+         WHERE pa.project_id = $1 AND pa.user_id = $2
+        UNION
+        SELECT 1
+          FROM project_assignments pa
+          JOIN team_members tm ON tm.team_id = pa.team_id
+         WHERE pa.project_id = $1 AND tm.user_id = $2
+         LIMIT 1
+        `,
+        [project_id, user.id],
+      );
+
+      if (!access.rows.length) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+    }
 
     if (!file_path) {
       return NextResponse.json({ status: 'error', message: 'file_path is required' }, { status: 400 });

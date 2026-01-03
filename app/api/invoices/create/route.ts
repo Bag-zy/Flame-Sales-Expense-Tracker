@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
-import { getSessionUser } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
 import { generateInvoicePDF, validateInvoice } from '@casoon/invoice-generator'
 
 interface CreateInvoiceItem {
@@ -73,13 +73,113 @@ function ensureHelveticaFont() {
   }
 }
 
+/**
+ * @swagger
+ * /api/invoices/create:
+ *   post:
+ *     operationId: createInvoice
+ *     tags:
+ *       - Invoices
+ *     summary: Create an invoice PDF from scratch
+ *     description: Creates an invoice for a recipient with line items and returns a generated PDF. Also persists invoice metadata and optionally links it to a project/cycle.
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerId:
+ *                 type: integer
+ *                 nullable: true
+ *               projectId:
+ *                 type: integer
+ *                 nullable: true
+ *               cycleId:
+ *                 type: integer
+ *                 nullable: true
+ *               recipient:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   address:
+ *                     type: object
+ *                     nullable: true
+ *                     properties:
+ *                       street:
+ *                         type: string
+ *                         nullable: true
+ *                       postalCode:
+ *                         type: string
+ *                         nullable: true
+ *                       city:
+ *                         type: string
+ *                         nullable: true
+ *                 required:
+ *                   - name
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     description:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *                     unit:
+ *                       type: string
+ *                       nullable: true
+ *                     unitPrice:
+ *                       type: number
+ *                     vatRate:
+ *                       type: number
+ *                       nullable: true
+ *                   required:
+ *                     - description
+ *                     - quantity
+ *                     - unitPrice
+ *               invoiceNumber:
+ *                 type: string
+ *                 nullable: true
+ *               invoiceDate:
+ *                 type: string
+ *                 format: date
+ *                 nullable: true
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *                 nullable: true
+ *               servicePeriod:
+ *                 type: string
+ *                 nullable: true
+ *               currency:
+ *                 type: string
+ *                 nullable: true
+ *             required:
+ *               - recipient
+ *               - items
+ *     responses:
+ *       200:
+ *         description: Invoice PDF generated successfully.
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: API key required.
+ */
+
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request)
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 })
+    const user = await getApiOrSessionUser(request)
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
-    const { organizationId, email: userEmail } = sessionUser
+    const { organizationId, email: userEmail } = user
 
     const body = (await request.json()) as CreateInvoiceRequest
     const { customerId, projectId, cycleId, recipient, items, invoiceNumber, invoiceDate, dueDate, servicePeriod, currency } = body
@@ -211,7 +311,7 @@ export async function POST(request: NextRequest) {
         bic: process.env.INVOICE_SENDER_BIC || 'TESTDE12XXX',
       },
       metadata: {
-        createdWith: 'Flame Expense Tracker',
+        createdWith: 'Flame Sales & Expense Tracker',
         creationDate: new Date().toISOString(),
         filename: 'invoice.json',
       },
@@ -315,7 +415,7 @@ export async function POST(request: NextRequest) {
               grossAmount,
               invoiceDate || null,
               organizationId,
-              sessionUser.id,
+              user.id,
             ],
           )
 

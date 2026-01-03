@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
 
+/**
+ * @swagger
+ * /api/currencies:
+ *   get:
+ *     operationId: listCurrencies
+ *     tags:
+ *       - Lookups
+ *     summary: List supported currencies
+ *     responses:
+ *       200:
+ *         description: Currencies fetched successfully.
+ *       500:
+ *         description: Failed to fetch currencies.
+ */
+
 export async function GET(_request: NextRequest) {
   try {
     const result = await db.query(

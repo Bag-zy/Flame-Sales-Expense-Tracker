@@ -19,7 +19,7 @@ export function DashboardStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const url = new URL('/api/reports/summary', window.location.origin)
+        const url = new URL('/api/v1/reports/summary', window.location.origin)
         if (selectedOrganization) {
           url.searchParams.set('orgId', selectedOrganization)
         }
@@ -54,14 +54,14 @@ export function DashboardStats() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 md:gap-4 md:grid-cols-3 lg:grid-cols-5">
         {[...Array(5)].map((_, i) => (
           <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Loading...</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">--</div>
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold sm:text-2xl">--</div>
             </CardContent>
           </Card>
         ))}
@@ -77,13 +77,13 @@ export function DashboardStats() {
   const currencyLabel = currentCurrencyCode || ''
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 md:gap-4 md:grid-cols-3 lg:grid-cols-5">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
           <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">
+        <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className="text-xl font-bold text-green-600 sm:text-2xl">
             {currencyLabel
               ? `${currencyLabel} ${totalRevenue.toLocaleString()}`
               : totalRevenue.toLocaleString()}
@@ -92,11 +92,11 @@ export function DashboardStats() {
       </Card>
       
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
           <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600">
+        <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className="text-xl font-bold text-red-600 sm:text-2xl">
             {currencyLabel
               ? `${currencyLabel} ${totalExpenses.toLocaleString()}`
               : totalExpenses.toLocaleString()}
@@ -105,14 +105,14 @@ export function DashboardStats() {
       </Card>
       
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
           <div className="space-y-1">
             <CardTitle className="text-sm font-medium">Net Profit / Loss</CardTitle>
             <CardDescription className="text-xs">Revenue - Expenses</CardDescription>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className={`text-xl font-bold sm:text-2xl ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {currencyLabel
               ? `${currencyLabel} ${netProfit.toLocaleString()}`
               : netProfit.toLocaleString()}
@@ -121,11 +121,11 @@ export function DashboardStats() {
       </Card>
       
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
           <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className="text-xl font-bold sm:text-2xl">
             {currencyLabel
               ? `${currencyLabel} ${totalBudgetAllotment.toLocaleString()}`
               : totalBudgetAllotment.toLocaleString()}
@@ -134,12 +134,12 @@ export function DashboardStats() {
       </Card>
       
       <Card>
-        <CardHeader className="space-y-1 pb-2">
+        <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
           <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
           <CardDescription className="text-xs">Budget - Expenses</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className={`text-xl font-bold sm:text-2xl ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {currencyLabel
               ? `${currencyLabel} ${remainingBudget.toLocaleString()}`
               : remainingBudget.toLocaleString()}

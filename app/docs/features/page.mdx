@@ -1,0 +1,147 @@
+---
+title: Core Features
+---
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Building, Users, Package, ShoppingCart, FilePlus, Calendar, Tag, Car, FileText, Paperclip, BarChart2, Code, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Core Features</h1>
+  <p className="text-xl mt-4 text-muted-foreground">An overview of the main modules in Flame Sales & Expense Tracker.</p>
+</div>
+
+<Callout type="info" title="High-level overview">
+  Flame Sales & Expense Tracker is organized into modules that mirror how businesses handle sales and expenses. Below is a high-level overview of the main areas.
+</Callout>
+
+<Separator className="my-8" />
+
+<h2 className="text-3xl font-bold mb-6">Structure and People</h2>
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Building className="h-6 w-6 mr-2" />Organizations, Teams, and Users</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p className="text-sm text-muted-foreground">Learn how to structure your account and control who has access to what.</p>
+      <a href="/docs/features/organizations-and-users" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<h2 className="text-3xl font-bold mb-6">Catalog and Relationships</h2>
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Package className="h-6 w-6 mr-2" />Products and Pricing</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Define what you sell and how it’s priced so sales and invoices stay consistent.</p>
+            <a href="/docs/features/products-and-pricing" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Users className="h-6 w-6 mr-2" />Customers and Vendors</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Capture who you sell to and who you buy from for better reporting and follow-up.</p>
+            <a href="/docs/features/customers-and-vendors" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<h2 className="text-3xl font-bold mb-6">Money In, Money Out</h2>
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><ShoppingCart className="h-6 w-6 mr-2" />Sales</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Track income and connect it to products and customers.</p>
+            <a href="/docs/features/sales" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><FilePlus className="h-6 w-6 mr-2" />Expenses</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Record and categorize money leaving the business.</p>
+            <a href="/docs/features/expenses" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Calendar className="h-6 w-6 mr-2" />Cycles</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Organize projects and activities by time periods.</p>
+            <a href="/docs/features/cycles" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Tag className="h-6 w-6 mr-2" />Categories</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Classify projects, expenses, and other business activities.</p>
+            <a href="/docs/features/categories" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Car className="h-6 w-6 mr-2" />Mileage Logs</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Track business vehicle usage and trips.</p>
+            <a href="/docs/features/mileage-logs" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><FileText className="h-6 w-6 mr-2" />Invoices</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Turn sales into formal invoices and track what customers owe.</p>
+            <a href="/docs/features/invoices" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Paperclip className="h-6 w-6 mr-2" />Receipts and Attachments</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Store supporting documents alongside your financial records.</p>
+            <a href="/docs/features/receipts-and-attachments" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<h2 className="text-3xl font-bold mb-6">Insights and Integrations</h2>
+<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />Reports</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Turn raw data into trends, breakdowns, and profitability insights.</p>
+            <a href="/docs/features/reports" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Code className="h-6 w-6 mr-2" />Developers and Integrations</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">Connect Flame to other systems or build custom tools with the API.</p>
+            <a href="/docs/features/developers-and-integrations" className="text-sm font-semibold text-primary mt-4 inline-block">Read the full guide <ArrowRight className="inline h-4 w-4 ml-1" /></a>
+        </CardContent>
+    </Card>
+</div>

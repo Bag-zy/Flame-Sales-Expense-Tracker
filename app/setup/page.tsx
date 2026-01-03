@@ -56,9 +56,9 @@ export default function SetupPage() {
     const loadData = async () => {
       try {
         const [projCatRes, expCatRes, varTypeRes] = await Promise.all([
-          fetch('/api/project-categories'),
-          fetch('/api/expense-categories'),
-          fetch('/api/variant-types')
+          fetch('/api/v1/project-categories'),
+          fetch('/api/v1/expense-categories'),
+          fetch('/api/v1/variant-types')
         ]);
         const projCatData = await projCatRes.json();
         const expCatData = await expCatRes.json();
@@ -115,7 +115,7 @@ export default function SetupPage() {
     setTimeout(() => {
       router.push('/');
     }, 1000);
-    toast.success('Setup complete! Welcome to Flame Expense Tracker.');
+    toast.success('Setup complete! Welcome to Flame Sales & Expense Tracker.');
   };
 
 
@@ -125,8 +125,8 @@ export default function SetupPage() {
         className={`${currentStep === 4 ? 'max-w-5xl' : 'max-w-md'} w-full space-y-8`}
       >
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Welcome to Flame Expense Tracker</h1>
-          <p className="mt-2 text-muted-foreground">Let's set up your workspace</p>
+          <h1 className="text-3xl font-bold">Welcome to Flame Sales & Expense Tracker</h1>
+          <p className="mt-2 text-muted-foreground">Let&apos;s set up your workspace</p>
         </div>
 
         {currentStep === 1 && (

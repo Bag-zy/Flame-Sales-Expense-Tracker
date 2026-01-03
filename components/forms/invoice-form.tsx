@@ -11,15 +11,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { CustomerForm } from '@/components/forms/customer-form';
 import { useFilter } from '@/lib/context/filter-context';
+import { Switcher } from '@/components/ui/shadcn-io/navbar-12/Switcher';
 
 interface InvoiceFormProps {
   saleIds: number[];
@@ -94,7 +88,7 @@ export function InvoiceForm({
         currency: form.currency || undefined,
       };
 
-      const response = await fetch('/api/invoices/generate', {
+      const response = await fetch('/api/v1/invoices/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -266,7 +260,6 @@ export function CreateInvoiceForm({
   const [loading, setLoading] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [customerSearch, setCustomerSearch] = useState('');
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [customerList, setCustomerList] = useState<InvoiceCustomer[]>(customers || []);
   const [products, setProducts] = useState<InvoiceProductVariant[]>([]);
@@ -290,7 +283,7 @@ export function CreateInvoiceForm({
 
   const loadCustomers = async (search?: string) => {
     try {
-      const url = new URL('/api/customers', window.location.origin);
+      const url = new URL('/api/v1/customers', window.location.origin);
       if (search && search.trim()) {
         url.searchParams.set('search', search.trim());
       }
@@ -307,7 +300,7 @@ export function CreateInvoiceForm({
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetch('/api/products');
+        const response = await fetch('/api/v1/products');
         const data = await response.json();
         if (data.status === 'success') {
           const rawProducts = data.products || [];
@@ -356,20 +349,6 @@ export function CreateInvoiceForm({
   const handleHeaderChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCustomerInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setCustomerSearch(value);
-    setShowCustomerDropdown(true);
-    await loadCustomers(value);
-  };
-
-  const handleSelectCustomer = (customer: InvoiceCustomer) => {
-    setSelectedCustomerId(customer.id.toString());
-    setCustomerSearch(customer.name);
-    setForm((prev) => ({ ...prev, recipientName: customer.name }));
-    setShowCustomerDropdown(false);
   };
 
   const handleItemChange = (
@@ -496,7 +475,7 @@ export function CreateInvoiceForm({
         currency: form.currency || undefined,
       };
 
-      const response = await fetch('/api/invoices/create', {
+      const response = await fetch('/api/v1/invoices/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -535,41 +514,29 @@ export function CreateInvoiceForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-foreground">Customer</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="Search or enter customer name"
-                    value={customerSearch}
-                    onChange={handleCustomerInputChange}
-                    onFocus={() => setShowCustomerDropdown(true)}
-                    required
-                  />
-                  {showCustomerDropdown && customerList.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full bg-popover border border-border rounded-md shadow max-h-40 overflow-y-auto">
-                      {customerList.map((customer) => (
-                        <button
-                          key={customer.id}
-                          type="button"
-                          onClick={() => handleSelectCustomer(customer)}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                        >
-                          <div className="font-medium text-foreground">{customer.name}</div>
-                          {customer.email && (
-                            <div className="text-xs text-muted-foreground">{customer.email}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowCustomerDialog(true)}
-                >
-                  + New
-                </Button>
-              </div>
+              <Switcher
+                items={customerList.map((c) => ({ value: c.id.toString(), label: c.name }))}
+                value={selectedCustomerId}
+                onChange={(value) => {
+                  setSelectedCustomerId(value);
+                  const selected = customerList.find((c) => c.id.toString() === value);
+                  if (selected) {
+                    setCustomerSearch(selected.name);
+                    setForm((prev) => ({ ...prev, recipientName: selected.name }));
+                  }
+                }}
+                placeholder="Select customer..."
+                searchPlaceholder="Search customer..."
+                onSearchChange={(query) => {
+                  setCustomerSearch(query);
+                  void loadCustomers(query);
+                }}
+                emptyText="No customers found."
+                widthClassName="w-full"
+                actionLabel="+ New customer"
+                onAction={() => setShowCustomerDialog(true)}
+                allowClear={false}
+              />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-foreground">Recipient Name</label>
@@ -658,52 +625,36 @@ export function CreateInvoiceForm({
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-foreground">Product</label>
-                      <Select
+                      <Switcher
+                        items={uniqueProducts.map((p) => ({
+                          value: p.product_name,
+                          label: p.product_name,
+                        }))}
                         value={item.productName}
-                        onValueChange={(value) => handleProductSelect(index, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {uniqueProducts.map((product) => (
-                            <SelectItem
-                              key={`${product.product_id}-${product.product_name}`}
-                              value={product.product_name}
-                            >
-                              {product.product_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(value) => handleProductSelect(index, value)}
+                        placeholder="Select product"
+                        searchPlaceholder="Search product..."
+                        emptyText="No products found."
+                        widthClassName="w-full"
+                      />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-foreground">Product Variant</label>
-                      <Select
+                      <Switcher
+                        items={variantsForProduct.map((variant) => ({
+                          value: variant.id.toString(),
+                          label: variant.label
+                            ? `${variant.label}${variant.unit_of_measurement ? ` (${variant.unit_of_measurement})` : ''}`
+                            : 'Default variant',
+                        }))}
                         value={item.variantId}
-                        onValueChange={(value) => handleVariantSelect(index, value)}
+                        onChange={(value) => handleVariantSelect(index, value)}
                         disabled={variantsForProduct.length === 0}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select variant" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {variantsForProduct.map((variant) => (
-                            <SelectItem
-                              key={variant.id.toString()}
-                              value={variant.id.toString()}
-                            >
-                              {variant.label
-                                ? `${variant.label}${
-                                    variant.unit_of_measurement
-                                      ? ` (${variant.unit_of_measurement})`
-                                      : ''
-                                  }`
-                                : 'Default variant'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select variant"
+                        searchPlaceholder="Search variant..."
+                        emptyText="No variants found."
+                        widthClassName="w-full"
+                      />
                     </div>
                   </div>
 

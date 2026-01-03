@@ -8,6 +8,7 @@ import { AuthGuard } from '@/components/auth-guard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ interface ReportSummary {
 
 function ProjectsPageContent() {
   const { refreshProjects, organizations, selectedOrganization, setSelectedProject, currentCurrencyCode } = useFilter();
+  const searchParams = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
@@ -78,18 +80,26 @@ function ProjectsPageContent() {
     }
   }, [selectedOrganization]);
 
+  useEffect(() => {
+    if (searchParams?.get('new') === '1') {
+      setEditingProject(null);
+      setShowForm(true);
+    }
+  }, [searchParams]);
+
   const loadData = async () => {
     try {
-      const projectsUrl = selectedOrganization ? `/api/projects?org_id=${selectedOrganization}` : '/api/projects';
-      const summaryUrl = new URL('/api/reports/summary', window.location.origin);
+      const projectsUrl = selectedOrganization ? `/api/v1/projects?org_id=${selectedOrganization}` : '/api/v1/projects';
+      const summaryUrl = new URL('/api/v1/reports/summary', window.location.origin);
+
       if (selectedOrganization) {
         summaryUrl.searchParams.set('orgId', selectedOrganization);
       }
 
       const [projectsRes, projectCatsRes, expenseCatsRes, summaryRes] = await Promise.all([
         fetch(projectsUrl),
-        fetch('/api/project-categories'),
-        fetch('/api/expense-categories'),
+        fetch('/api/v1/project-categories'),
+        fetch('/api/v1/expense-categories'),
         fetch(summaryUrl.toString()),
       ]);
 
@@ -182,8 +192,8 @@ function ProjectsPageContent() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Projects</h1>
           <Button onClick={() => setShowForm(true)}>
             <Plus className="w-4 h-4 mr-2" />
@@ -191,90 +201,59 @@ function ProjectsPageContent() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {totalProjects.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold sm:text-2xl">
+                  {totalProjects.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {activeProjectsCount.toLocaleString()}
-              </div>
-              <CardDescription className="text-xs mt-1">Ongoing (not yet ended)</CardDescription>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold text-green-600 sm:text-2xl">
+                  {activeProjectsCount.toLocaleString()}
+                </div>
+                <CardDescription className="text-xs mt-1">Ongoing (not yet ended)</CardDescription>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {currencyLabel
-                  ? `${currencyLabel} ${Number(totalBudgetAllotment ?? 0).toLocaleString()}`
-                  : Number(totalBudgetAllotment ?? 0).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold sm:text-2xl">
+                  {currencyLabel
+                    ? `${currencyLabel} ${Number(totalBudgetAllotment ?? 0).toLocaleString()}`
+                    : Number(totalBudgetAllotment ?? 0).toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="space-y-1 pb-2">
-              <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
-              <CardDescription className="text-xs">Budget - Expenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${remainingSpend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {currencyLabel
-                  ? `${currencyLabel} ${Number(remainingSpend ?? 0).toLocaleString()}`
-                  : Number(remainingSpend ?? 0).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
+                <CardDescription className="text-xs">Budget - Expenses</CardDescription>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className={`text-xl font-bold sm:text-2xl ${remainingSpend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {currencyLabel
+                    ? `${currencyLabel} ${Number(remainingSpend ?? 0).toLocaleString()}`
+                    : Number(remainingSpend ?? 0).toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingProject ? 'Edit Project' : 'Add New Project'}</DialogTitle>
-            </DialogHeader>
-            <ProjectForm
-              editingProject={editingProject}
-              selectedOrganizationId={selectedOrganization}
-              organizations={organizations}
-              projectCategories={projectCategories}
-              setProjectCategories={setProjectCategories}
-              expenseCategories={expenseCategories}
-              setExpenseCategories={setExpenseCategories}
-              onSuccess={(project) => {
-                setShowForm(false);
-                setEditingProject(null);
-                loadData();
-                refreshProjects(); // Refresh the global projects list
-                // Auto-select this project in the global navigation
-                if (project?.id) {
-                  setSelectedProject(project.id.toString());
-                }
-              }}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingProject(null);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-
-        <div className="max-h-[60vh] overflow-y-auto">
           {projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projects.map((project) => (
@@ -307,6 +286,37 @@ function ProjectsPageContent() {
               No projects found. Create your first project to get started.
             </div>
           )}
+
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingProject ? 'Edit Project' : 'Add New Project'}</DialogTitle>
+              </DialogHeader>
+              <ProjectForm
+                editingProject={editingProject}
+                selectedOrganizationId={selectedOrganization}
+                organizations={organizations}
+                projectCategories={projectCategories}
+                setProjectCategories={setProjectCategories}
+                expenseCategories={expenseCategories}
+                setExpenseCategories={setExpenseCategories}
+                onSuccess={(project) => {
+                  setShowForm(false);
+                  setEditingProject(null);
+                  loadData();
+                  refreshProjects(); // Refresh the global projects list
+                  // Auto-select this project in the global navigation
+                  if (project?.id) {
+                    setSelectedProject(project.id.toString());
+                  }
+                }}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingProject(null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </AuthGuard>

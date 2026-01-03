@@ -1,6 +1,42 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  // Remove deprecated appDir option - it's now default in Next.js 14
-}
+module.exports = async () => {
+  const { default: nextra } = await import('nextra')
+  const { default: withPWAInit } = await import('next-pwa')
 
-module.exports = nextConfig
+  const withNextra = nextra({
+    // Add Nextra-specific options here if needed
+  })
+
+  const baseConfig = {
+    // Configure pageExtensions to include md and mdx
+    pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
+    images: {
+      // Disable Next.js image optimization so Cloudflare/OpenNext serves
+      // images directly from the public folder without using /_next/image.
+      unoptimized: true,
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'drive.google.com',
+          pathname: '/**',
+        },
+      ],
+    },
+    experimental: {
+      turbo: {
+        resolveAlias: {
+          'next-mdx-import-source-file': './mdx-components.tsx',
+        },
+      },
+    },
+  }
+
+  const withPWA = withPWAInit({
+    dest: 'public',
+    // Disable PWA/service worker in development to avoid noisy GenerateSW warnings
+    disable: process.env.NODE_ENV === 'development',
+    register: true,
+  })
+
+  return withNextra(withPWA(baseConfig))
+}

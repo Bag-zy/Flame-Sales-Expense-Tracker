@@ -1,0 +1,125 @@
+---
+title: Organizations, Teams, and Users
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Building, Users, User, UserPlus, ShieldCheck, CheckCircle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Organizations, Teams, and Users</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Manage how work is structured in Flame, from top-level organizations to individual user access.</p>
+</div>
+
+<Callout type="info" title="Who should read this?">
+  This page is for admins and owners who manage how work is structured in Flame – organizations, teams, and user access.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle>Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Flame lets you separate data and permissions using:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li><b>Organizations</b> – a top-level container for a company or business unit.</li>
+      <li><b>Teams</b> – optional groupings of users inside an organization.</li>
+      <li><b>Users</b> – people who can sign in and work with the data.</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-3 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Building className="h-6 w-6 mr-2" />Organizations</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>An organization typically represents a legal entity or major business unit. Use them to separate data for different companies, regions, or brands.</p>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Users className="h-6 w-6 mr-2" />Teams</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Teams are an optional layer to logically group users, for example by department or project, for filtering and permissions.</p>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><User className="h-6 w-6 mr-2" />Users and Roles</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Roles or permissions determine what users can do, from full admin access to read-only viewing.</p>
+    </CardContent>
+  </Card>
+</div>
+
+<Callout type="warning" title="Sensitive financial data" className="mt-8">
+  Be deliberate about who receives admin-level access. Only trusted roles should manage organizations, user invites, or high-level settings.
+</Callout>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle>Common Workflows</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-6">
+    <div>
+      <h3 className="font-semibold flex items-center"><Building className="h-5 w-5 mr-2" />Create a new organization</h3>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Navigate to the <b>Organizations</b> area.</li>
+        <li>Create a new organization and fill in the basic details.</li>
+        <li>Review default settings such as currency and locale.</li>
+      </ol>
+    </div>
+    <Separator />
+    <div>
+      <h3 className="font-semibold flex items-center"><UserPlus className="h-5 w-5 mr-2" />Invite a user</h3>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>From the relevant organization, open the <b>Users</b> section.</li>
+        <li>Enter the user’s email address and assign a role.</li>
+        <li>Send the invitation.</li>
+      </ol>
+    </div>
+    <Separator />
+    <div>
+      <h3 className="font-semibold flex items-center"><Users className="h-5 w-5 mr-2" />Create and assign teams</h3>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Open the <b>Teams</b> section within an organization.</li>
+        <li>Create a new team.</li>
+        <li>Add users to the team.</li>
+      </ol>
+    </div>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<Card>
+    <CardHeader>
+        <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+    </CardHeader>
+    <CardContent>
+        <ul className="list-disc pl-5 space-y-2">
+            <li>Keep test/sandbox data in a separate organization from production.</li>
+            <li>Use meaningful names for organizations and teams.</li>
+            <li>Regularly review membership and roles.</li>
+        </ul>
+    </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/getting-started" className="block p-4 border rounded-lg hover:bg-muted">Getting Started <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/sales" className="block p-4 border rounded-lg hover:bg-muted">Sales <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/expenses" className="block p-4 border rounded-lg hover:bg-muted">Expenses <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/reports" className="block p-4 border rounded-lg hover:bg-muted">Reports <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

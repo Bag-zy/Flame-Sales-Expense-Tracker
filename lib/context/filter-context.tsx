@@ -57,8 +57,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   const loadProjects = async () => {
     try {
-      const url = selectedOrganization ? `/api/projects?org_id=${selectedOrganization}` : '/api/projects'
+      const url = selectedOrganization ? `/api/v1/projects?org_id=${selectedOrganization}` : '/api/v1/projects'
       const response = await fetch(url)
+
       const data = await response.json()
       if (data.status === 'success') {
         setProjects(data.projects || [])
@@ -70,7 +71,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   const loadOrganizations = async () => {
     try {
-      const response = await fetch('/api/organizations/all')
+      const response = await fetch('/api/v1/organizations/all')
+
       const data = await response.json()
       if (data.status === 'success') {
         setOrganizations(data.organizations || [])
@@ -101,9 +103,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
     try {
       const url = selectedOrganization ? 
-        `/api/cycles?project_id=${projectId}&org_id=${selectedOrganization}` : 
-        `/api/cycles?project_id=${projectId}`
+        `/api/v1/cycles?project_id=${projectId}&org_id=${selectedOrganization}` : 
+        `/api/v1/cycles?project_id=${projectId}`
       const response = await fetch(url)
+
       const data = await response.json()
       
       if (data.status === 'success') {

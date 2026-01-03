@@ -112,14 +112,14 @@ function ExpensesPageContent() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const expenseUrl = new URL('/api/expenses', window.location.origin)
+      const expenseUrl = new URL('/api/v1/expenses', window.location.origin)
       if (selectedProject) expenseUrl.searchParams.set('project_id', selectedProject)
       if (selectedCycle) expenseUrl.searchParams.set('cycle_id', selectedCycle)
 
-      const categoriesUrl = new URL('/api/expense-categories', window.location.origin)
+      const categoriesUrl = new URL('/api/v1/expense-categories', window.location.origin)
       if (selectedProject) categoriesUrl.searchParams.set('projectId', selectedProject)
 
-      const projectCategoriesUrl = new URL('/api/project-categories', window.location.origin)
+      const projectCategoriesUrl = new URL('/api/v1/project-categories', window.location.origin)
       if (selectedProject) projectCategoriesUrl.searchParams.set('projectId', selectedProject)
 
       const summaryParams = new URLSearchParams()
@@ -127,16 +127,16 @@ function ExpensesPageContent() {
       if (selectedCycle) summaryParams.set('cycleId', selectedCycle)
       const summaryQuery = summaryParams.toString()
       const summaryUrl = summaryQuery
-        ? `/api/reports/summary?${summaryQuery}`
-        : '/api/reports/summary'
+        ? `/api/v1/reports/summary?${summaryQuery}`
+        : '/api/v1/reports/summary'
 
       const [expensesRes, categoriesRes, vendorsRes, paymentMethodsRes, projectCategoriesRes, cyclesRes, summaryRes] = await Promise.all([
         fetch(expenseUrl.toString()),
         fetch(categoriesUrl.toString()),
-        fetch('/api/vendors'),
-        fetch('/api/payment-methods'),
+        fetch('/api/v1/vendors'),
+        fetch('/api/v1/payment-methods'),
         fetch(projectCategoriesUrl.toString()),
-        fetch(selectedProject ? `/api/cycles?project_id=${selectedProject}` : '/api/cycles'),
+        fetch(selectedProject ? `/api/v1/cycles?project_id=${selectedProject}` : '/api/v1/cycles'),
         fetch(summaryUrl),
       ]);
 
@@ -186,7 +186,7 @@ function ExpensesPageContent() {
     if (!confirm(`Are you sure you want to delete ${selectedExpenseIds.length} expense(s)?`)) return;
 
     try {
-      const deletePromises = selectedExpenseIds.map(id => fetch(`/api/expenses?id=${id}`, { method: 'DELETE' }));
+      const deletePromises = selectedExpenseIds.map(id => fetch(`/api/v1/expenses?id=${id}`, { method: 'DELETE' }));
       await Promise.all(deletePromises);
       toast.success(`Deleted ${selectedExpenseIds.length} expense(s) successfully`);
       setSelectedExpenseIds([]);
@@ -204,7 +204,7 @@ function ExpensesPageContent() {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this expense?')) return;
     try {
-      const response = await fetch(`/api/expenses?id=${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/v1/expenses?id=${id}`, { method: 'DELETE' });
       const data = await response.json();
       if (data.status === 'success') {
         toast.success('Expense deleted successfully');
@@ -238,10 +238,10 @@ function ExpensesPageContent() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Expenses</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             <Button
               onClick={() => {
                 if (!selectedProject || !selectedCycle) {
@@ -267,14 +267,15 @@ function ExpensesPageContent() {
           </div>
         </div>
 
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
         {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
                 <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold sm:text-2xl">
                   {currencyLabel
                     ? `${currencyLabel} ${Number(summary.totalBudgetAllotment ?? 0).toLocaleString()}`
                     : Number(summary.totalBudgetAllotment ?? 0).toLocaleString()}
@@ -283,11 +284,11 @@ function ExpensesPageContent() {
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
                 <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold text-red-600 sm:text-2xl">
                   {currencyLabel
                     ? `${currencyLabel} ${Number(summary.totalExpenses ?? 0).toLocaleString()}`
                     : Number(summary.totalExpenses ?? 0).toLocaleString()}
@@ -296,12 +297,12 @@ function ExpensesPageContent() {
             </Card>
 
             <Card>
-              <CardHeader className="space-y-1 pb-2">
+              <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
                 <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
                 <CardDescription className="text-xs">Budget - Expenses</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className={`text-xl font-bold sm:text-2xl ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {currencyLabel
                     ? `${currencyLabel} ${Number(remainingBudget ?? 0).toLocaleString()}`
                     : Number(remainingBudget ?? 0).toLocaleString()}
@@ -311,7 +312,7 @@ function ExpensesPageContent() {
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             type="text"
             placeholder="Search expenses..."
@@ -358,6 +359,8 @@ function ExpensesPageContent() {
           </DialogContent>
         </Dialog>
 
+        </div>
+
         <div className="mt-6 rounded-lg border border-border bg-card overflow-hidden">
           <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
             {expenses.length > 0 ? (
@@ -393,7 +396,7 @@ function ExpensesPageContent() {
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{new Date(expense.date_time_created).toLocaleDateString()}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{getProjectName(expense.project_id)}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{expense.expense_name}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{expense.expense_name || expense.description}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{getCategoryName(expense.category_id)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{getVendorName(expense.vendor_id)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{getPaymentMethodName(expense.payment_method_id)}</td>

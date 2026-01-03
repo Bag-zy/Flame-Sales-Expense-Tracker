@@ -2,8 +2,15 @@
 
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useFilter } from '@/lib/context/filter-context'
+import { useRouter } from 'next/navigation'
+import { Navbar12 } from '@/components/ui/shadcn-io/navbar-12'
+import Switcher from '@/components/ui/shadcn-io/navbar-12/Switcher'
+import { useUser } from '@stackframe/stack'
+import { useEffect, useState } from 'react'
+
 import {
   LayoutDashboard,
+  Bot,
   Repeat,
   Package,
   Wallet,
@@ -17,6 +24,8 @@ import {
 
 export const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Docs', href: '/docs', icon: FileText },
+  { name: 'Assistant', href: '/assistant', icon: Bot },
   { name: 'Cycles', href: '/cycles', icon: Repeat },
   { name: 'Products', href: '/products', icon: Package },
   { name: 'Expenses', href: '/expenses', icon: Wallet },
@@ -31,86 +40,133 @@ export const navigation = [
 export function Navigation() {
   const { selectedProject, selectedCycle, selectedOrganization, projects, cycles, organizations, setSelectedProject, setSelectedCycle, setSelectedOrganization } = useFilter()
 
-  
+  const user = useUser()
+  const [userRole, setUserRole] = useState<string>('')
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const loadRole = async () => {
+      if (!user?.primaryEmail) return
+      try {
+        const response = await fetch('/api/v1/users')
+        const data = await response.json()
+        if (data.status === 'success') {
+          const found = (data.users as Array<{ email: string; user_role?: string }>).find(
+            (u) => u.email === user.primaryEmail,
+          )
+          setUserRole(found?.user_role ?? '')
+        }
+      } catch {
+        setUserRole('')
+      }
+    }
+
+    if (user) {
+      loadRole()
+    }
+  }, [user])
+
+  const organizationItems = organizations.map((org) => ({
+    value: org.id.toString(),
+    label: org.name,
+  }))
+
+  const projectItems = projects.map((project) => ({
+    value: project.id.toString(),
+    label: project.project_name,
+  }))
+
+  const cycleItems = cycles.map((cycle) => ({
+    value: cycle.id.toString(),
+    label: cycle.cycle_name,
+  }))
+
   return (
     <>
-      {/* Top Bar */}
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="w-full flex h-14 items-center px-4 gap-4">
-          <SidebarTrigger />
+      <Navbar12
+        className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        navigationLinks={[]}
+        userName={user?.displayName ?? ''}
+        userEmail={user?.primaryEmail ?? ''}
+        userAvatar={user?.profileImageUrl ?? undefined}
+        userRole={userRole}
+        onUserItemClick={(item) => {
+          if (item === 'profile') {
+            router.push('/settings?section=profile')
+            return
+          }
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-1.5">
+          if (item === 'settings') {
+            router.push('/settings')
+            return
+          }
+
+          if (item === 'logout') {
+            user?.signOut()
+          }
+        }}
+        switchers={
+          <>
+            <SidebarTrigger />
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="organization-select"
-                  className="text-[11px] font-medium text-muted-foreground"
-                >
-                  Organization
-                </label>
-                <select
-                  id="organization-select"
+                <span className="text-xs font-medium text-muted-foreground">Organization</span>
+                <Switcher
+                  items={organizationItems}
                   value={selectedOrganization}
-                  onChange={(e) => setSelectedOrganization(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  <option value="">Select Organization</option>
-                  {organizations.map((org) => (
-                    <option key={org.id} value={org.id.toString()}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setSelectedOrganization(v)}
+                  actionLabel="+ Add organization"
+                  onAction={() => router.push('/setup')}
+                  placeholder="Select organization..."
+                  searchPlaceholder="Search organization..."
+                  emptyText="No organization found."
+                  widthClassName="w-[220px]"
+                  allowClear={false}
+                />
               </div>
-
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="project-select"
-                  className="text-[11px] font-medium text-muted-foreground"
-                >
-                  Project
-                </label>
-                <select
-                  id="project-select"
+                <span className="text-xs font-medium text-muted-foreground">Project</span>
+                <Switcher
+                  items={projectItems}
                   value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  <option value="">All Projects</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id.toString()}>
-                      {project.project_name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => {
+                    setSelectedProject(v)
+                    if (!v) {
+                      setSelectedCycle('')
+                    }
+                  }}
+                  actionLabel="+ Add project"
+                  onAction={() => router.push('/projects?new=1')}
+                  placeholder="All projects"
+                  searchPlaceholder="Search project..."
+                  emptyText="No project found."
+                  widthClassName="w-[220px]"
+                />
               </div>
-
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="cycle-select"
-                  className="text-[11px] font-medium text-muted-foreground"
-                >
-                  Cycle
-                </label>
-                <select
-                  id="cycle-select"
+                <span className="text-xs font-medium text-muted-foreground">Cycle</span>
+                <Switcher
+                  items={cycleItems}
                   value={selectedCycle}
-                  onChange={(e) => setSelectedCycle(e.target.value)}
+                  onChange={(v) => setSelectedCycle(v)}
+                  actionLabel={selectedProject ? '+ Add cycle' : undefined}
+                  onAction={
+                    selectedProject
+                      ? () => router.push('/cycles?new=1')
+                      : undefined
+                  }
+                  placeholder={selectedProject ? 'All cycles' : 'Select project first'}
+                  searchPlaceholder="Search cycle..."
+                  emptyText="No cycle found."
+                  widthClassName="w-[220px]"
                   disabled={!selectedProject}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <option value="">{selectedProject ? 'All Cycles' : 'Select project first'}</option>
-                  {cycles.map((cycle) => (
-                    <option key={cycle.id} value={cycle.id.toString()}>
-                      {cycle.cycle_name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
-          </div>
-        </div>
-      </nav>
+          </>
+        }
+      />
     </>
   )
 }

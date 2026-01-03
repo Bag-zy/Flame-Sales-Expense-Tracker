@@ -73,7 +73,7 @@ const statusOptions = [
   { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-800' },
   { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800' },
-  { value: 'refunded', label: 'Refunded', color: 'bg-gray-100 text-gray-800' }
+  { value: 'refunded', label: 'Refunded', color: 'bg-muted text-foreground' }
 ];
 
 function SalesPageContent() {
@@ -116,7 +116,7 @@ function SalesPageContent() {
       const salesParams: any = { limit: 100 };
       if (selectedProject) salesParams.project_id = parseInt(selectedProject);
 
-      const salesUrl = new URL('/api/sales', window.location.origin)
+      const salesUrl = new URL('/api/v1/sales', window.location.origin)
       if (selectedProject) salesUrl.searchParams.set('project_id', selectedProject)
       if (selectedCycle) salesUrl.searchParams.set('cycle_id', selectedCycle)
 
@@ -125,8 +125,8 @@ function SalesPageContent() {
       if (selectedCycle) summaryParams.set('cycleId', selectedCycle)
       const summaryQuery = summaryParams.toString()
       const summaryUrl = summaryQuery
-        ? `/api/reports/summary?${summaryQuery}`
-        : '/api/reports/summary'
+        ? `/api/v1/reports/summary?${summaryQuery}`
+        : '/api/v1/reports/summary'
 
       const [salesRes, summaryRes] = await Promise.all([
         fetch(salesUrl.toString()),
@@ -154,7 +154,8 @@ function SalesPageContent() {
 
   const loadProducts = async () => {
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch('/api/v1/products');
+
       const data = await response.json();
       if (data.status === 'success') {
         const rawProducts = data.products || [];
@@ -220,7 +221,7 @@ function SalesPageContent() {
     if (!confirm('Are you sure you want to delete this sale?')) return;
 
     try {
-      const response = await fetch(`/api/sales?id=${id}`, {
+      const response = await fetch(`/api/v1/sales?id=${id}`, {
         method: 'DELETE'
       });
 
@@ -279,7 +280,7 @@ function SalesPageContent() {
   const getStatusBadge = (status: string) => {
     const statusOption = statusOptions.find(s => s.value === status);
     return (
-      <Badge className={statusOption?.color || 'bg-gray-100 text-gray-800'}>
+      <Badge className={statusOption?.color || 'bg-muted text-foreground'}>
         {statusOption?.label || status}
       </Badge>
     );
@@ -340,8 +341,8 @@ function SalesPageContent() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-3xl font-bold">Sales</h1>
         <Button
           onClick={() => {
@@ -358,14 +359,15 @@ function SalesPageContent() {
         </Button>
       </div>
 
+      <div className="flex-1 overflow-y-auto space-y-6 pr-2">
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 md:gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold text-green-600 sm:text-2xl">
                 {currencyLabel
                   ? `${currencyLabel} ${Number(summary.totalRevenue ?? 0).toLocaleString()}`
                   : Number(summary.totalRevenue ?? 0).toLocaleString()}
@@ -374,11 +376,11 @@ function SalesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold text-red-600 sm:text-2xl">
                 {currencyLabel
                   ? `${currencyLabel} ${Number(summary.totalExpenses ?? 0).toLocaleString()}`
                   : Number(summary.totalExpenses ?? 0).toLocaleString()}
@@ -387,14 +389,14 @@ function SalesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <div className="space-y-1">
                 <CardTitle className="text-sm font-medium">Net Profit / Loss</CardTitle>
                 <CardDescription className="text-xs">Revenue - Expenses</CardDescription>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className={`text-xl font-bold sm:text-2xl ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {currencyLabel
                   ? `${currencyLabel} ${Number(summary.netProfit ?? 0).toLocaleString()}`
                   : Number(summary.netProfit ?? 0).toLocaleString()}
@@ -403,11 +405,11 @@ function SalesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Cash Collected</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold text-green-600 sm:text-2xl">
                 {currencyLabel
                   ? `${currencyLabel} ${Number(cashCollectedTotal || 0).toLocaleString()}`
                   : Number(cashCollectedTotal || 0).toLocaleString()}
@@ -416,14 +418,14 @@ function SalesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Completed Sales</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-500 mb-1">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-sm text-muted-foreground mb-1">
                 {completedSalesCount.toLocaleString()} {completedSalesCount === 1 ? 'sale' : 'sales'}
               </div>
-              <div className="text-xl font-bold text-green-600">
+              <div className="text-lg font-bold text-green-600 sm:text-xl">
                 {currencyLabel
                   ? `${currencyLabel} ${Number(completedSalesTotal || 0).toLocaleString()}`
                   : Number(completedSalesTotal || 0).toLocaleString()}
@@ -432,14 +434,14 @@ function SalesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-500 mb-1">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-sm text-muted-foreground mb-1">
                 {pendingSalesCount.toLocaleString()} {pendingSalesCount === 1 ? 'sale' : 'sales'}
               </div>
-              <div className="text-xl font-bold text-yellow-600">
+              <div className="text-lg font-bold text-yellow-600 sm:text-xl">
                 {currencyLabel
                   ? `${currencyLabel} ${Number(pendingOutstandingTotal || 0).toLocaleString()}`
                   : Number(pendingOutstandingTotal || 0).toLocaleString()}
@@ -476,6 +478,8 @@ function SalesPageContent() {
           />
         </DialogContent>
       </Dialog>
+
+      </div>
 
       <div className="mt-6 rounded-lg border border-border bg-card overflow-hidden">
         <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
@@ -516,7 +520,7 @@ function SalesPageContent() {
                     <td className="px-4 py-2 whitespace-nowrap">{sale.customer}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{getProductInfo(sale)}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <span className={statusOption?.color || 'bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium'}>
+                      <span className={statusOption?.color || 'bg-muted text-foreground px-2 py-1 rounded-full text-xs font-medium'}>
                         {statusLabel}
                       </span>
                     </td>

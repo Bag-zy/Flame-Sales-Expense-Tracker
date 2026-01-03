@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useUser } from '@stackframe/stack'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,7 +25,7 @@ interface User {
 }
 
 export default function TeamsPage() {
-  const { data: session } = useSession()
+  const user = useUser({ or: 'redirect' }) // Redirect if not authenticated
   const [teams, setTeams] = useState<Team[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [newTeamName, setNewTeamName] = useState('');
@@ -33,14 +33,14 @@ export default function TeamsPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
 
   useEffect(() => {
-    if (session) {
+    if (user) {
       fetchTeams()
       fetchUsers()
     }
-  }, [session])
+  }, [user])
 
   const fetchTeams = async () => {
-    const response = await fetch('/api/teams')
+    const response = await fetch('/api/v1/teams')
     const data = await response.json()
     if (data.status === 'success') {
       setTeams(data.teams)
@@ -48,7 +48,7 @@ export default function TeamsPage() {
   }
 
   const fetchUsers = async () => {
-    const response = await fetch('/api/users')
+    const response = await fetch('/api/v1/users')
     const data = await response.json()
     if (data.status === 'success') {
       setUsers(data.users)
@@ -56,7 +56,7 @@ export default function TeamsPage() {
   }
 
   const handleCreateTeam = async () => {
-    const response = await fetch('/api/teams', {
+    const response = await fetch('/api/v1/teams', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newTeamName, team_lead_id: selectedLead || null }),
@@ -74,7 +74,7 @@ export default function TeamsPage() {
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-3xl font-bold">Team Management</h1>
         <Button onClick={() => setShowInviteModal(true)}>
           Invite User

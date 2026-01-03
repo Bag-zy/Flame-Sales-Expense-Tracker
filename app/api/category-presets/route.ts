@@ -1,16 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
-import { getSessionUser } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * @swagger
+ * /api/category-presets:
+ *   get:
+ *     operationId: listCategoryPresets
+ *     tags:
+ *       - Category Presets
+ *     summary: List global project category presets with their expense presets
+ *     security:
+ *       - stackSession: []
+ *     responses:
+ *       200:
+ *         description: Category presets fetched successfully.
+ *       401:
+ *         description: API key required.
+ */
 
 // GET /api/category-presets
 // Returns global project category presets with their expense presets
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request)
-    if (!sessionUser?.id) {
-      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 })
+    const user = await getApiOrSessionUser(request)
+    if (!user?.id) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
 
     const result = await db.query(

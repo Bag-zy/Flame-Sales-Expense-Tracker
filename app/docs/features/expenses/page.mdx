@@ -1,0 +1,122 @@
+---
+title: Expenses
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { FilePlus, PlusCircle, Tag, Paperclip, BarChart2, CheckCircle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Expenses</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Record and track money leaving your business, from supplier invoices to recurring subscriptions.</p>
+</div>
+
+<Callout type="info" title="What the Expenses module does">
+  The Expenses module records money leaving the business – everything from supplier invoices to recurring subscriptions.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle className="flex items-center"><FilePlus className="h-6 w-6 mr-2" />Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Each expense record usually includes:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li>The <b>vendor</b> you paid.</li>
+      <li>An <b>expense category</b> (e.g. marketing, operations, payroll).</li>
+      <li>The <b>amount</b>, <b>tax</b>, and <b>currency</b>.</li>
+      <li>A <b>date</b> and optional notes.</li>
+      <li>Links to <b>receipts</b> or supporting documents.</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><PlusCircle className="h-6 w-6 mr-2" />Creating an Expense</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>A typical workflow:</p>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Open the <b>Expenses</b> area.</li>
+        <li>Create a new expense entry.</li>
+        <li>Choose the vendor (or create one if it doesn’t exist).</li>
+        <li>Select the appropriate category.</li>
+        <li>Enter the amount, currency, and date.</li>
+        <li>Attach a receipt or file if available.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Tag className="h-6 w-6 mr-2" />Categories</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Categories help you understand where money is going. Common patterns include:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Marketing, Sales, Operations, Payroll.</li>
+        <li>Travel, Software, Infrastructure, Contractors.</li>
+      </ul>
+      <p className="mt-2 text-sm text-muted-foreground">Categories are critical for reporting and budgeting.</p>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Paperclip className="h-6 w-6 mr-2" />Receipts and Attachments</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Whenever possible, attach proof of payment to expenses:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li>PDF or image copies of supplier invoices.</li>
+      <li>Bank statements or receipts.</li>
+    </ul>
+    <p className="mt-2 text-sm text-muted-foreground">This makes audits, reimbursement, and compliance work much easier.</p>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />Reporting on Expenses</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Expense data supports:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Spend by category.</li>
+                <li>Spend by vendor.</li>
+                <li>Net profit calculations (when combined with sales).</li>
+            </ul>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <ul className="list-disc pl-5 space-y-2">
+                <li>Log expenses close to the transaction date to keep data fresh.</li>
+                <li>Use consistent categories so reports remain meaningful over time.</li>
+                <li>Attach receipts for anything material or important to audits.</li>
+            </ul>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/features/customers-and-vendors" className="block p-4 border rounded-lg hover:bg-muted">Customers and vendors <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/receipts-and-attachments" className="block p-4 border rounded-lg hover:bg-muted">Receipts and attachments <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/reports" className="block p-4 border rounded-lg hover:bg-muted">Reports <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

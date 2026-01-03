@@ -1,0 +1,92 @@
+{
+  "sdkName": "flame-sales-and-expense-tracker",
+  "apiVersion": "1.0.0",
+  "apiName": "flame-sales-and-expense-tracker-api",
+  "baseUrl": "https://flame-expense-tracker.bagumajonah3.workers.dev",
+  "specFilePath": "http://localhost:3000/api/openapi",
+  "languages": [
+    "python",
+    "typescript"
+  ],
+  "auth": [
+    "apikey"
+  ],
+  "customizations": {
+    "includeOptionalSnippetParameters": true,
+    "authentication": {
+      "apiKey": {
+        "header": "X-Api-Key"
+      }
+    },
+    "devContainer": true,
+    "generateEnv": true,
+    "inferServiceNames": false,
+    "injectedModels": [],
+    "license": {
+      "type": "MIT"
+    },
+    "responseHeaders": true,
+    "retry": {
+      "enabled": true,
+      "maxAttempts": 3,
+      "retryDelay": 150
+    }
+  },
+  "mcp": {
+    "generate": false
+  },
+  "languageOptions": {
+    "python": {
+      "alwaysInitializeOptionals": false,
+      "pypiPackageName": "",
+      "githubRepoName": "",
+      "ignoreFiles": [],
+      "sdkVersion": "1.0.0",
+      "liblabVersion": "2"
+    },
+    "typescript": {
+      "bundle": true,
+      "exportClassDefault": false,
+      "httpClient": "fetch",
+      "npmName": "",
+      "npmOrg": "",
+      "githubRepoName": "",
+      "ignoreFiles": [],
+      "sdkVersion": "1.0.0",
+      "liblabVersion": "2",
+      "generateEnumAs": "union"
+    },
+    "go": {
+      "goModuleName": "",
+      "githubRepoName": "",
+      "ignoreFiles": [],
+      "sdkVersion": "1.0.0",
+      "liblabVersion": "2"
+    },
+    "java": {
+      "groupId": "",
+      "artifactId": "",
+      "ignoreFiles": [],
+      "sdkVersion": "1.0.0",
+      "liblabVersion": "2",
+      "includeKotlinSnippets": false
+    },
+    "csharp": {
+      "ignoreFiles": [],
+      "liblabVersion": "2",
+      "renameIllegalModelProperties": true,
+      "sdkVersion": "1.0.0",
+      "useOptionalWrapper": true,
+      "validateResponses": false
+    },
+    "php": {
+      "ignoreFiles": [],
+      "liblabVersion": "2",
+      "renameIllegalModelProperties": true,
+      "sdkVersion": "1.0.0"
+    }
+  },
+  "publishing": {
+    "githubOrg": ""
+  }
+}

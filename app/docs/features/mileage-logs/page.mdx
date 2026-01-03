@@ -1,0 +1,136 @@
+---
+title: Mileage Logs
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Car, PlusCircle, Edit, Tag, BarChart2, CheckCircle, FileText, PieChart, ShieldCheck } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Mileage Logs</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Track vehicle usage for business purposes, calculate reimbursements, and categorize travel expenses.</p>
+</div>
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Car className="h-6 w-6 mr-2" />What are Mileage Logs?</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Mileage logs are records of business-related vehicle trips that include:</p>
+    <ul className="list-disc pl-5 mt-4 space-y-2">
+      <li>Starting and ending odometer readings</li>
+      <li>Trip purpose and destination</li>
+      <li>Date and time of travel</li>
+      <li>Business category for the trip</li>
+      <li>Additional notes or details</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><PlusCircle className="h-6 w-6 mr-2" />Creating a Mileage Log</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Navigate to the Mileage Logs section.</li>
+        <li>Click the "Create Mileage Log" button.</li>
+        <li>Enter trip details (odometer readings, date, purpose).</li>
+        <li>Click "Save" to record the mileage.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Edit className="h-6 w-6 mr-2" />Managing Mileage Logs</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>You can edit existing mileage logs to:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Update odometer readings</li>
+        <li>Modify trip details</li>
+        <li>Change categories</li>
+        <li>Add supporting documentation</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Tag className="h-6 w-6 mr-2" />Mileage Categories</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Categorize mileage logs for better organization:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Client visits</li>
+                <li>Business errands</li>
+                <li>Commuting to work sites</li>
+                <li>Product delivery</li>
+                <li>Other business travel</li>
+            </ul>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />Reporting and Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Mileage logs can be used for:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Calculating mileage reimbursement</li>
+                <li>Tracking business vehicle usage</li>
+                <li>Tax deduction documentation</li>
+                <li>Business expense reporting</li>
+                <li>Vehicle maintenance scheduling based on usage</li>
+            </ul>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+## Benefits of Using Mileage Logs
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div className="flex items-start space-x-4">
+    <ShieldCheck className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Tax Compliance</h3>
+      <p className="text-sm text-muted-foreground">Maintain records for tax deduction purposes.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <CheckCircle className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Reimbursement</h3>
+      <p className="text-sm text-muted-foreground">Accurately calculate mileage reimbursement for employees.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <FileText className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Expense Tracking</h3>
+      <p className="text-sm text-muted-foreground">Include vehicle usage as part of business expenses.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <PieChart className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Business Intelligence</h3>
+      <p className="text-sm text-muted-foreground">Understand travel patterns and costs.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <ShieldCheck className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Audit Trail</h3>
+      <p className="text-sm text-muted-foreground">Keep detailed records for financial audits.</p>
+    </div>
+  </div>
+</div>

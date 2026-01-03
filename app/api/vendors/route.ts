@@ -1,14 +1,124 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
-import { getSessionUser } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
+
+/**
+ * @swagger
+ * /api/vendors:
+ *   get:
+ *     operationId: listVendors
+ *     tags:
+ *       - Vendors
+ *     summary: List vendors in the current organization
+ *     security:
+ *       - stackSession: []
+ *     responses:
+ *       200:
+ *         description: Vendors fetched successfully.
+ *       401:
+ *         description: API key required.
+ *   post:
+ *     operationId: createVendor
+ *     tags:
+ *       - Vendors
+ *     summary: Create a new vendor
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               vendor_name:
+ *                 type: string
+ *               contact_person:
+ *                 type: string
+ *                 nullable: true
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 nullable: true
+ *               phone:
+ *                 type: string
+ *                 nullable: true
+ *               address:
+ *                 type: string
+ *                 nullable: true
+ *             required:
+ *               - vendor_name
+ *     responses:
+ *       200:
+ *         description: Vendor created successfully.
+ *       401:
+ *         description: API key required.
+ *   put:
+ *     operationId: updateVendor
+ *     tags:
+ *       - Vendors
+ *     summary: Update an existing vendor
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: integer
+ *               vendor_name:
+ *                 type: string
+ *               contact_person:
+ *                 type: string
+ *                 nullable: true
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 nullable: true
+ *               phone:
+ *                 type: string
+ *                 nullable: true
+ *               address:
+ *                 type: string
+ *                 nullable: true
+ *             required:
+ *               - id
+ *               - vendor_name
+ *     responses:
+ *       200:
+ *         description: Vendor updated successfully.
+ *       401:
+ *         description: API key required.
+ *   delete:
+ *     operationId: deleteVendor
+ *     tags:
+ *       - Vendors
+ *     summary: Delete a vendor
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vendor deleted successfully.
+ *       401:
+ *         description: API key required.
+ */
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const result = await db.query(
       'SELECT * FROM vendors WHERE organization_id = $1 ORDER BY vendor_name',
@@ -31,11 +141,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { vendor_name, contact_person, email, phone, address } = await request.json();
     
@@ -58,11 +168,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { id, vendor_name, contact_person, email, phone, address } = await request.json();
     
@@ -85,11 +195,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

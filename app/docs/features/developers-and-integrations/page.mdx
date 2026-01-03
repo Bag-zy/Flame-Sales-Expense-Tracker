@@ -1,0 +1,121 @@
+---
+title: Developers and Integrations
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Code, Terminal, Share2, Key, Shield, GitBranch, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Developers and Integrations</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Connect Flame to other systems and build custom tooling on top of it.</p>
+</div>
+
+<Callout type="info" title="Who this is for">
+  This page is for developers and technical partners who want to connect Flame to other systems or build custom tooling on top of it.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle className="flex items-center"><Share2 className="h-6 w-6 mr-2" />Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Flame exposes an HTTP API and can be integrated with other tools in your stack (for example, accounting platforms, CRMs, or BI tools).</p>
+    <p className="mt-2">This page focuses on concepts and patterns. For detailed endpoints and schemas, see the <a href="/docs/api">API Reference</a>.</p>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Typical Integration Scenarios
+
+<div className="grid md:grid-cols-2 gap-6">
+  <div className="flex items-start space-x-4">
+    <Code className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Syncing Data</h3>
+      <p className="text-sm text-muted-foreground">Sync customers, vendors, and products with a CRM or ERP.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <Terminal className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">BI and Reporting</h3>
+      <p className="text-sm text-muted-foreground">Pull sales and expense data into a BI tool.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <Share2 className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Automation</h3>
+      <p className="text-sm text-muted-foreground">Automate recurring imports of bank or card transactions.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <Code className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">External Systems</h3>
+      <p className="text-sm text-muted-foreground">Push invoices into an external billing or accounting system.</p>
+    </div>
+  </div>
+</div>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Terminal className="h-6 w-6 mr-2" />Working with the API</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>The API is documented via an OpenAPI / Swagger spec.</p>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Locate your <code>/api-docs</code> endpoint.</li>
+        <li>Import the spec into your preferred API client.</li>
+        <li>Explore available endpoints for resources.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Key className="h-6 w-6 mr-2" />Authentication and Security</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Common considerations include:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>API token and session management.</li>
+        <li>Role-based access control.</li>
+        <li>Rate limiting and throttling.</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><GitBranch className="h-6 w-6 mr-2" />Change Management</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>When you or your team add new endpoints or change existing ones:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li>Update the OpenAPI spec and redeploy.</li>
+      <li>Communicate changes to internal consumers of the API.</li>
+      <li>Version your integrations when making breaking changes.</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Callout type="warning" title="Protecting credentials" className="mt-8">
+  Never hard-code secrets such as API keys or tokens in public repositories. Store them in a secure secret manager or environment variables.
+</Callout>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/api" className="block p-4 border rounded-lg hover:bg-muted">API Reference <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/reports" className="block p-4 border rounded-lg hover:bg-muted">Reports <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

@@ -1,39 +1,129 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { getSessionUser } from '@/lib/api-auth';
+import { getApiOrSessionUser } from '@/lib/api-auth-keys';
 import { convertAmount } from '@/lib/currency-api';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * @swagger
+ * /api/reports/summary:
+ *   get:
+ *     operationId: getSummaryReport
+ *     tags:
+ *       - Reports
+ *     summary: Get high-level financial summary
+ *     description: Returns total revenue, total expenses, net profit, budget and monthly trends for an organization or project.
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: orgId
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: projectId
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: cycleId
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Summary report data.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 totalRevenue:
+ *                   type: number
+ *                 totalExpenses:
+ *                   type: number
+ *                 netProfit:
+ *                   type: number
+ *                 totalBudgetAllotment:
+ *                   type: number
+ *                 monthlyTrends:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ReportSummary/properties/monthlyTrends/items'
+ *       401:
+ *         description: API key required.
+ */
+
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
     const { searchParams } = new URL(request.url);
     const orgIdParam = searchParams.get('orgId');
     const projectId = searchParams.get('projectId');
     const cycleId = searchParams.get('cycleId');
 
-    let organizationId = sessionUser.organizationId;
+    let organizationId = user.organizationId;
     let orgCurrencyCode: string | null = null;
 
+    const allowedProjectsParam: number[] | null = user.role === 'admin'
+      ? null
+      : (
+          await db.query(
+            `
+            SELECT DISTINCT pa.project_id
+              FROM project_assignments pa
+              JOIN projects p ON p.id = pa.project_id
+             WHERE p.organization_id = $1
+               AND pa.user_id = $2
+            UNION
+            SELECT DISTINCT pa.project_id
+              FROM project_assignments pa
+              JOIN team_members tm ON tm.team_id = pa.team_id
+              JOIN projects p ON p.id = pa.project_id
+             WHERE p.organization_id = $1
+               AND tm.user_id = $2
+            `,
+            [organizationId, user.id],
+          )
+        ).rows.map((r: any) => Number(r.project_id)).filter((n: number) => Number.isFinite(n));
+
     if (orgIdParam) {
-      const orgCheck = await db.query(
-        'SELECT id, currency_code FROM organizations WHERE id = $1 AND created_by = $2',
-        [orgIdParam, sessionUser.id]
-      );
+      if (String(orgIdParam) === String(user.organizationId)) {
+        organizationId = parseInt(orgIdParam, 10);
+      } else {
+        if (user.role !== 'admin') {
+          return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+        }
 
-      if (orgCheck.rowCount === 0) {
-        return NextResponse.json(
-          { status: 'error', message: 'Forbidden' },
-          { status: 403 },
+        const orgCheck = await db.query(
+          'SELECT id, currency_code FROM organizations WHERE id = $1 AND created_by = $2',
+          [orgIdParam, user.id]
         );
-      }
 
-      organizationId = parseInt(orgIdParam, 10);
-      orgCurrencyCode = orgCheck.rows[0]?.currency_code ?? null;
+        if (orgCheck.rows.length === 0) {
+          return NextResponse.json(
+            { status: 'error', message: 'Forbidden' },
+            { status: 403 },
+          );
+        }
+
+        organizationId = parseInt(orgIdParam, 10);
+        orgCurrencyCode = orgCheck.rows[0]?.currency_code ?? null;
+      }
+    }
+
+    if (projectId && user.role !== 'admin') {
+      const allowed = (allowedProjectsParam ?? []).includes(Number(projectId));
+      if (!allowed) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
     }
 
     if (!orgCurrencyCode) {
@@ -56,7 +146,7 @@ export async function GET(request: NextRequest) {
       let totalExpensesQuery = `SELECT COALESCE(SUM(amount), 0) as total_expenses FROM expenses WHERE organization_id = $1`;
       let totalBudgetQuery = `SELECT COALESCE(SUM(budget_allotment), 0) as total_budget FROM cycles WHERE organization_id = $1`;
 
-      const summaryParams: (string | number)[] = [organizationId];
+      const summaryParams: (string | number | null | number[])[] = [organizationId];
 
       if (projectId) {
         summaryParams.push(projectId);
@@ -74,6 +164,12 @@ export async function GET(request: NextRequest) {
         totalBudgetQuery += ` AND id = $${idx}`;
       }
 
+      summaryParams.push(allowedProjectsParam);
+      const allowedIdx = summaryParams.length;
+      totalSalesQuery += ` AND ($${allowedIdx}::int[] IS NULL OR project_id = ANY($${allowedIdx}::int[]))`;
+      totalExpensesQuery += ` AND ($${allowedIdx}::int[] IS NULL OR project_id = ANY($${allowedIdx}::int[]))`;
+      totalBudgetQuery += ` AND ($${allowedIdx}::int[] IS NULL OR project_id = ANY($${allowedIdx}::int[]))`;
+
       const [salesResult, expensesResult, budgetResult] = await Promise.all([
         db.query(totalSalesQuery, summaryParams),
         db.query(totalExpensesQuery, summaryParams),
@@ -85,7 +181,7 @@ export async function GET(request: NextRequest) {
       totalBudgetAllotment = parseFloat(budgetResult.rows[0]?.total_budget ?? 0) || 0;
     } else {
       // Org-level view with a configured base currency: aggregate by source currency and convert to org currency.
-      const salesParams: (string | number)[] = [organizationId];
+      const salesParams: (string | number | null | number[])[] = [organizationId, allowedProjectsParam];
       let salesBucketsQuery = `
         SELECT
           COALESCE(p.currency_code, org.currency_code) AS currency_code,
@@ -94,6 +190,7 @@ export async function GET(request: NextRequest) {
         JOIN organizations org ON s.organization_id = org.id
         LEFT JOIN projects p ON s.project_id = p.id
         WHERE s.organization_id = $1
+          AND ($2::int[] IS NULL OR s.project_id = ANY($2::int[]))
       `;
       if (cycleId) {
         salesParams.push(cycleId);
@@ -101,7 +198,7 @@ export async function GET(request: NextRequest) {
       }
       salesBucketsQuery += ' GROUP BY COALESCE(p.currency_code, org.currency_code)';
 
-      const expensesParams: (string | number)[] = [organizationId];
+      const expensesParams: (string | number | null | number[])[] = [organizationId, allowedProjectsParam];
       let expensesBucketsQuery = `
         SELECT
           COALESCE(p.currency_code, org.currency_code) AS currency_code,
@@ -110,6 +207,7 @@ export async function GET(request: NextRequest) {
         JOIN organizations org ON e.organization_id = org.id
         LEFT JOIN projects p ON e.project_id = p.id
         WHERE e.organization_id = $1
+          AND ($2::int[] IS NULL OR e.project_id = ANY($2::int[]))
       `;
       if (cycleId) {
         expensesParams.push(cycleId);
@@ -117,7 +215,7 @@ export async function GET(request: NextRequest) {
       }
       expensesBucketsQuery += ' GROUP BY COALESCE(p.currency_code, org.currency_code)';
 
-      const budgetParams: (string | number)[] = [organizationId];
+      const budgetParams: (string | number | null | number[])[] = [organizationId, allowedProjectsParam];
       let budgetBucketsQuery = `
         SELECT
           COALESCE(p.currency_code, org.currency_code) AS currency_code,
@@ -126,6 +224,7 @@ export async function GET(request: NextRequest) {
         JOIN organizations org ON c.organization_id = org.id
         LEFT JOIN projects p ON c.project_id = p.id
         WHERE c.organization_id = $1
+          AND ($2::int[] IS NULL OR c.project_id = ANY($2::int[]))
       `;
       if (cycleId) {
         budgetParams.push(cycleId);
@@ -184,6 +283,7 @@ export async function GET(request: NextRequest) {
             AND sale_date >= (NOW() - INTERVAL '11 months')
             AND ($2::int IS NULL OR project_id = $2::int)
             AND ($3::int IS NULL OR cycle_id = $3::int)
+            AND ($4::int[] IS NULL OR project_id = ANY($4::int[]))
           GROUP BY 1
         ),
         monthly_expenses AS (
@@ -195,6 +295,7 @@ export async function GET(request: NextRequest) {
             AND date_time_created >= (NOW() - INTERVAL '11 months')
             AND ($2::int IS NULL OR project_id = $2::int)
             AND ($3::int IS NULL OR cycle_id = $3::int)
+            AND ($4::int[] IS NULL OR project_id = ANY($4::int[]))
           GROUP BY 1
         )
         SELECT
@@ -207,7 +308,7 @@ export async function GET(request: NextRequest) {
         ORDER BY m.month;
       `;
 
-      const trendsParams: (string | number | null)[] = [organizationId, null, null]; // org, project, cycle
+      const trendsParams: (string | number | null | number[])[] = [organizationId, null, null, allowedProjectsParam]; // org, project, cycle, allowed projects
       if (projectId) {
         trendsParams[1] = projectId;
       }
@@ -242,7 +343,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Sales buckets per month and currency
-      const salesMonthlyParams: (string | number)[] = [organizationId];
+      const salesMonthlyParams: (string | number | null | number[])[] = [organizationId, allowedProjectsParam];
       let salesMonthlyQuery = `
         SELECT
           TO_CHAR(DATE_TRUNC('month', s.sale_date), 'YYYY-MM') AS month,
@@ -253,6 +354,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN projects p ON s.project_id = p.id
         WHERE s.organization_id = $1
           AND s.sale_date >= (NOW() - INTERVAL '11 months')
+          AND ($2::int[] IS NULL OR s.project_id = ANY($2::int[]))
       `;
       if (cycleId) {
         salesMonthlyParams.push(cycleId);
@@ -261,7 +363,7 @@ export async function GET(request: NextRequest) {
       salesMonthlyQuery += ' GROUP BY 1, 2 ORDER BY 1';
 
       // Expenses buckets per month and currency
-      const expensesMonthlyParams: (string | number)[] = [organizationId];
+      const expensesMonthlyParams: (string | number | null | number[])[] = [organizationId, allowedProjectsParam];
       let expensesMonthlyQuery = `
         SELECT
           TO_CHAR(DATE_TRUNC('month', e.date_time_created), 'YYYY-MM') AS month,
@@ -272,6 +374,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN projects p ON e.project_id = p.id
         WHERE e.organization_id = $1
           AND e.date_time_created >= (NOW() - INTERVAL '11 months')
+          AND ($2::int[] IS NULL OR e.project_id = ANY($2::int[]))
       `;
       if (cycleId) {
         expensesMonthlyParams.push(cycleId);

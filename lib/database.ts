@@ -1,34 +1,29 @@
-import { Pool } from 'pg'
+import { neon } from '@neondatabase/serverless'
 
 const connectionString = process.env.DATABASE_URL
 
-const pool = connectionString
-  ? new Pool({
-      connectionString,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    })
-  : new Pool({
-      host: process.env.PG_HOST || 'localhost',
-      port: parseInt(process.env.PG_PORT || '5432'),
-      database: process.env.PG_DATABASE || 'expense-tracker',
-      user: process.env.PG_USER || 'postgres',
-      password: String(process.env.PG_PASSWORD || ''),
-      ssl: process.env.PGSSLMODE === 'require'
-        ? {
-            rejectUnauthorized: false,
-          }
-        : undefined,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    })
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is not set')
+}
 
-export { pool as db }
+const sql = neon(connectionString)
+
+type QueryResult = { rows: any[] }
+
+async function query(text: string, params?: any[]): Promise<QueryResult> {
+  // The Neon serverless driver now requires function-style calls to use
+  // sql.query("SELECT $1", [value]) instead of sql("SELECT $1", [value]).
+  // We keep a pg-like db.query(text, params) API and adapt under the hood.
+  const result = params && params.length > 0
+    ? await (sql as any).query(text, params)
+    : await (sql as any).query(text)
+
+  // Normalize different possible return shapes into a simple { rows } object
+  const rows = Array.isArray(result) ? result : (result?.rows ?? [])
+  return { rows }
+}
+
+export const db = { query }
 
 export interface Project {
   id: number

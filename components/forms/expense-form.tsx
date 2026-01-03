@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useFilter } from '@/lib/context/filter-context';
+import { Switcher } from '@/components/ui/shadcn-io/navbar-12/Switcher';
 
 // Interfaces from expenses/page.tsx - consider moving to a shared types file
 interface Expense {
@@ -237,7 +238,7 @@ export function ExpenseForm({
                     setFormData(prev => ({ ...prev, vendor_id: existingVendor.id.toString() }));
                 } else {
                     // Auto-create vendor if it doesn't exist
-                    const response = await fetch('/api/vendors', {
+                    const response = await fetch('/api/v1/vendors', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ vendor_name }),
@@ -588,10 +589,11 @@ export function ExpenseForm({
             if (editingExpense) {
                 // Handle updating a single expense
                 const item = expenseItems[0];
+                const description = item.description || item.expense_name;
                 const body = {
                     id: editingExpense.id,
                     expense_name: item.expense_name,
-                    description: item.description,
+                    description,
                     amount: parseFloat(item.amount),
                     expense_date: item.expense_date,
                     project_id: formData.project_id ? parseInt(formData.project_id) : null,
@@ -600,7 +602,7 @@ export function ExpenseForm({
                     payment_method_id: formData.payment_method_id ? parseInt(formData.payment_method_id) : null,
                     cycle_id: formData.cycle_id ? parseInt(formData.cycle_id) : null,
                 };
-                const response = await fetch('/api/expenses', {
+                const response = await fetch('/api/v1/expenses', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
@@ -611,9 +613,10 @@ export function ExpenseForm({
             } else {
                 // Handle creating multiple new expenses
                 const creationPromises = expenseItems.map(item => {
+                    const description = item.description || item.expense_name;
                     const body = {
                         expense_name: item.expense_name,
-                        description: item.description,
+                        description,
                         amount: parseFloat(item.amount),
                         expense_date: item.expense_date,
                         project_id: formData.project_id ? parseInt(formData.project_id) : null,
@@ -622,7 +625,7 @@ export function ExpenseForm({
                         payment_method_id: formData.payment_method_id ? parseInt(formData.payment_method_id) : null,
                         cycle_id: formData.cycle_id ? parseInt(formData.cycle_id) : null,
                     };
-                    return fetch('/api/expenses', {
+                    return fetch('/api/v1/expenses', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body),
@@ -637,7 +640,7 @@ export function ExpenseForm({
 
                 if (ocrImageDataUrl && (ocrText || ocrStructured) && createdExpenses.length > 0) {
                     try {
-                        await fetch('/api/receipts', {
+                        await fetch('/api/v1/receipts', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -677,7 +680,7 @@ export function ExpenseForm({
         }
 
         try {
-            const response = await fetch('/api/expense-categories', {
+            const response = await fetch('/api/v1/expense-categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -717,11 +720,13 @@ export function ExpenseForm({
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-foreground">1. Select Project<span className="text-red-500"> *</span></label>
-                        <select
+                        <Switcher
+                            items={projects.map((project) => ({
+                                value: project.id.toString(),
+                                label: project.project_name,
+                            }))}
                             value={selectedProject || ''}
-                            required
-                            onChange={(e) => {
-                                const newProjectId = e.target.value;
+                            onChange={(newProjectId) => {
                                 setSelectedProject(newProjectId);
                                 setSelectedCycle('');
                                 if (newProjectId) {
@@ -732,76 +737,72 @@ export function ExpenseForm({
                                 }
                                 setFormData((prev) => ({ ...prev, project_id: newProjectId, category_id: '', vendor_id: '', payment_method_id: '', cycle_id: '' }));
                             }}
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                        >
-                            <option value="">Select project</option>
-                            {projects.map((project) => (
-                                <option key={project.id} value={project.id.toString()}>
-                                    {project.project_name}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Select project"
+                            searchPlaceholder="Search project..."
+                            emptyText="No projects found."
+                            widthClassName="w-full"
+                            allowClear={false}
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-foreground">2. Select Cycle<span className="text-red-500"> *</span></label>
-                        <select
+                        <Switcher
+                            items={cycles.map((cycle) => ({
+                                value: cycle.id.toString(),
+                                label: cycle.cycle_name,
+                            }))}
                             value={selectedCycle || ''}
-                            required
-                            onChange={(e) => {
-                                const newCycleId = e.target.value;
+                            onChange={(newCycleId) => {
                                 setSelectedCycle(newCycleId);
                                 setFormData((prev) => ({ ...prev, cycle_id: newCycleId }));
                             }}
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                             disabled={!selectedProject}
-                        >
-                            <option value="">Select cycle</option>
-                            {cycles.map((cycle) => (
-                                <option key={cycle.id} value={cycle.id.toString()}>
-                                    {cycle.cycle_name}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Select cycle"
+                            searchPlaceholder="Search cycle..."
+                            emptyText="No cycles found."
+                            widthClassName="w-full"
+                            allowClear={false}
+                        />
                     </div>
                 </div>
                 {/* Column 2 */}
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-foreground">3. Select Project Category<span className="text-red-500"> *</span></label>
-                        <select
+                        <Switcher
+                            items={projectCategories.map((category) => ({
+                                value: category.id.toString(),
+                                label: category.category_name,
+                            }))}
                             value={selectedProjectCategoryId}
-                            required
-                            onChange={(e) => {
-                                setSelectedProjectCategoryId(e.target.value);
+                            onChange={(value) => {
+                                setSelectedProjectCategoryId(value);
                                 setFormData((prev) => ({ ...prev, category_id: '' }));
                             }}
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                             disabled={!selectedProject}
-                        >
-                            <option value="">Select project category</option>
-                            {projectCategories.map((category) => (
-                                <option key={category.id} value={category.id.toString()}>
-                                    {category.category_name}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Select project category"
+                            searchPlaceholder="Search project category..."
+                            emptyText="No project categories found."
+                            widthClassName="w-full"
+                            allowClear={false}
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-2 text-foreground">4. Select Expense Category<span className="text-red-500"> *</span></label>
-                        <select 
-                            value={formData.category_id} 
-                            onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                            required
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                        <Switcher
+                            items={filteredExpenseCategories.map((category) => ({
+                                value: category.id.toString(),
+                                label: category.category_name,
+                            }))}
+                            value={formData.category_id}
+                            onChange={(value) => setFormData({ ...formData, category_id: value })}
                             disabled={!selectedProjectCategoryId}
-                        >
-                            <option value="">Select category</option>
-                            {filteredExpenseCategories.map((category) => (
-                                <option key={category.id} value={category.id.toString()}>
-                                    {category.category_name}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder="Select category"
+                            searchPlaceholder="Search category..."
+                            emptyText="No categories found."
+                            widthClassName="w-full"
+                            allowClear={false}
+                        />
                         <div className="mt-2 space-y-2">
                             {!showNewCategoryForm && (
                                 <button type="button" className="text-xs text-primary hover:underline" onClick={() => setShowNewCategoryForm(true)}>
@@ -886,33 +887,33 @@ export function ExpenseForm({
                                 )}
                                 <div>
                                     <label className="block text-sm font-medium text-foreground">Vendor</label>
-                                    <select 
-                                        value={formData.vendor_id} 
-                                        onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                                    >
-                                        <option value="">Select vendor</option>
-                                        {vendors.map((vendor) => (
-                                            <option key={vendor.id} value={vendor.id.toString()}>
-                                                {vendor.vendor_name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Switcher
+                                        items={vendors.map((vendor) => ({
+                                            value: vendor.id.toString(),
+                                            label: vendor.vendor_name,
+                                        }))}
+                                        value={formData.vendor_id}
+                                        onChange={(value) => setFormData({ ...formData, vendor_id: value })}
+                                        placeholder="Select vendor"
+                                        searchPlaceholder="Search vendor..."
+                                        emptyText="No vendors found."
+                                        widthClassName="w-full"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-foreground">Payment Method</label>
-                                    <select 
-                                        value={formData.payment_method_id} 
-                                        onChange={(e) => setFormData({ ...formData, payment_method_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                                    >
-                                        <option value="">Select payment method</option>
-                                        {paymentMethods.map((method) => (
-                                            <option key={method.id} value={method.id.toString()}>
-                                                {method.payment_method}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Switcher
+                                        items={paymentMethods.map((method) => ({
+                                            value: method.id.toString(),
+                                            label: method.payment_method,
+                                        }))}
+                                        value={formData.payment_method_id}
+                                        onChange={(value) => setFormData({ ...formData, payment_method_id: value })}
+                                        placeholder="Select payment method"
+                                        searchPlaceholder="Search payment method..."
+                                        emptyText="No payment methods found."
+                                        widthClassName="w-full"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -934,8 +935,8 @@ export function ExpenseForm({
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         )}
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            <div className="md:col-span-2">
+                                        <div className="grid grid-cols-1 md:grid-cols-[2fr,1fr,1.2fr] gap-4">
+                                            <div>
                                                 <label className="block text-sm font-medium text-foreground">Expense Name</label>
                                                 <Input
                                                     value={item.expense_name}
@@ -966,6 +967,7 @@ export function ExpenseForm({
                                                     type="date"
                                                     value={item.expense_date}
                                                     onChange={(e) => updateExpenseItem(index, 'expense_date', e.target.value)}
+                                                    className="min-w-[9rem]"
                                                     required
                                                 />
                                             </div>

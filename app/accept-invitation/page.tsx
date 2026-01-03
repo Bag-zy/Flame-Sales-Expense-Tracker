@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { signIn, useSession } from 'next-auth/react';
+import { useUser, useStackApp } from '@stackframe/stack';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 function AcceptInvitationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const user = useUser();
+  const app = useStackApp();
   const token = searchParams.get('token');
 
   const [isValidating, setIsValidating] = useState(true);
@@ -45,7 +46,7 @@ function AcceptInvitationContent() {
 
   useEffect(() => {
     // If user is authenticated, attempt to activate the account
-    if (status === 'authenticated' && userInfo) {
+    if (user && userInfo) {
       const activateAccount = async () => {
         try {
           const response = await fetch('/api/accept-invitation', {
@@ -66,7 +67,7 @@ function AcceptInvitationContent() {
       };
       activateAccount();
     }
-  }, [status, userInfo, token, router]);
+  }, [user, userInfo, token, router]);
 
   if (isValidating) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -87,17 +88,17 @@ function AcceptInvitationContent() {
     );
   }
 
-  if (userInfo && status !== 'authenticated') {
+  if (userInfo && !user) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>Accept Your Invitation</CardTitle>
-            <CardDescription>You've been invited to join <strong>{userInfo.organizationName}</strong>.</CardDescription>
+            <CardDescription>You&apos;ve been invited to join <strong>{userInfo.organizationName}</strong>.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p>Please sign in with your Google account (<strong>{userInfo.email}</strong>) to activate your account.</p>
-            <Button onClick={() => signIn('google')} className="w-full">
+            <Button onClick={() => app.signInWithOAuth('google')} className="w-full">
               Sign in with Google
             </Button>
           </CardContent>

@@ -26,8 +26,9 @@ export async function getSessionUser(_request?: NextRequest): Promise<SessionUse
   let dbUser = existing.rows[0]
 
   if (!dbUser) {
-    const countResult = await db.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM users')
-    const isFirstUser = countResult.rows[0]?.count === '0'
+    const countResult = await db.query('SELECT COUNT(*)::text AS count FROM users')
+    const countRow = countResult.rows[0] as { count: string } | undefined
+    const isFirstUser = countRow?.count === '0'
     const userRole = isFirstUser ? 'admin' : 'user'
 
     const created = await db.query(

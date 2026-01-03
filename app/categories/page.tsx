@@ -107,7 +107,8 @@ function CategoriesPageContent() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const res = await fetch('/api/projects');
+        const res = await fetch('/api/v1/projects');
+
         const data = await res.json();
 
         if (data.status === 'success' && Array.isArray(data.projects)) {
@@ -155,8 +156,8 @@ function CategoriesPageContent() {
       setLoading(true);
 
       const [projectRes, expenseRes] = await Promise.all([
-        fetch(`/api/project-categories?projectId=${projectId}`),
-        fetch(`/api/expense-categories?projectId=${projectId}`),
+        fetch(`/api/v1/project-categories?projectId=${projectId}`),
+        fetch(`/api/v1/expense-categories?projectId=${projectId}`),
       ]);
 
       const projectData = await projectRes.json();
@@ -183,7 +184,8 @@ function CategoriesPageContent() {
   const loadCategoryPresets = async () => {
     try {
       setLoadingPresets(true);
-      const response = await fetch('/api/category-presets');
+      const response = await fetch('/api/v1/category-presets');
+
       const data = await response.json();
 
       if (data.status === 'success' && Array.isArray(data.presets)) {
@@ -216,7 +218,7 @@ function CategoriesPageContent() {
     };
 
     try {
-      const response = await fetch('/api/expense-categories', {
+      const response = await fetch('/api/v1/expense-categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -254,7 +256,7 @@ function CategoriesPageContent() {
     };
 
     try {
-      const response = await fetch('/api/project-categories', {
+      const response = await fetch('/api/v1/project-categories', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -340,7 +342,7 @@ function CategoriesPageContent() {
         return;
       }
 
-      const response = await fetch('/api/category-presets/apply', {
+      const response = await fetch('/api/v1/category-presets/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -395,7 +397,7 @@ function CategoriesPageContent() {
     };
 
     try {
-      const response = await fetch('/api/expense-categories', {
+      const response = await fetch('/api/v1/expense-categories', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -516,7 +518,7 @@ function CategoriesPageContent() {
         <h1 className="text-3xl font-bold">Categories</h1>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-foreground">
             Select Project
           </label>
           <select
@@ -524,7 +526,7 @@ function CategoriesPageContent() {
             onChange={(e: ChangeEvent<HTMLSelectElement>) => {
               setSelectedProjectId(e.target.value);
             }}
-            className="w-full md:w-80 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full md:w-80 px-3 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="">Select a project</option>
             {projects.map((project) => (
@@ -536,7 +538,7 @@ function CategoriesPageContent() {
         </div>
 
         {!selectedProjectId && (
-          <div className="mt-4 text-sm text-gray-500">
+          <div className="mt-4 text-sm text-muted-foreground">
             Select a project above to manage its project and expense categories.
           </div>
         )}
@@ -546,7 +548,7 @@ function CategoriesPageContent() {
           {/* Left column: Project categories */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-700">Project Categories</h2>
+              <h2 className="text-xl font-semibold text-foreground">Project Categories</h2>
               <Button onClick={() => setShowProjectForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Category
@@ -584,10 +586,10 @@ function CategoriesPageContent() {
                       />
                     </div>
 
-                    <div className="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-4 md:col-span-2">
+                    <div className="border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-4 md:col-span-2">
                       {showCustomCategoryFormInDialog ? (
                         <>
-                          <h3 className="mb-2 text-sm font-medium text-gray-700">
+                          <h3 className="mb-2 text-sm font-medium text-foreground">
                             Create a custom project category and its expense categories
                           </h3>
                           <ProjectExpenseCategoriesForm
@@ -614,8 +616,8 @@ function CategoriesPageContent() {
                           />
                         </>
                       ) : (
-                        <p className="text-xs text-gray-500">
-                          Or choose "Add custom category" on the left to define your own project and expense categories.
+                        <p className="text-xs text-muted-foreground">
+                          Or choose &quot;Add custom category&quot; on the left to define your own project and expense categories.
                         </p>
                       )}
                     </div>
@@ -641,7 +643,7 @@ function CategoriesPageContent() {
                 <form onSubmit={handleProjectEditSubmit} className="space-y-4 mt-2">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground">
                         Category Name
                       </label>
                       <Input
@@ -657,7 +659,7 @@ function CategoriesPageContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground">
                         Description
                       </label>
                       <textarea
@@ -670,7 +672,7 @@ function CategoriesPageContent() {
                           })
                         }
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>
                   </div>
@@ -719,7 +721,7 @@ function CategoriesPageContent() {
                             {category.category_name}
                           </h3>
                           {!!category.is_custom && (
-                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                            <span className="px-2 py-1 text-xs bg-primary/10 text-primary rounded">
                               Custom
                             </span>
                           )}
@@ -769,8 +771,8 @@ function CategoriesPageContent() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold text-gray-700">Expense Categories</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-xl font-semibold text-foreground">Expense Categories</h2>
+                <p className="text-sm text-muted-foreground">
                   {selectedProjectCategory
                     ? `Showing expense categories for "${selectedProjectCategory.category_name}"`
                     : 'Select a project category on the left to view its expense categories.'}
@@ -804,14 +806,14 @@ function CategoriesPageContent() {
                       <label className="block text-sm font-medium mb-1">
                         Project Category
                       </label>
-                      <div className="text-sm text-gray-700 font-medium">
+                      <div className="text-sm text-foreground font-medium">
                         {selectedProjectCategory
                           ? selectedProjectCategory.category_name
                           : 'No project category selected'}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground">
                         Category Name
                       </label>
                       <Input
@@ -827,7 +829,7 @@ function CategoriesPageContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground">
                         Description
                       </label>
                       <textarea
@@ -840,7 +842,7 @@ function CategoriesPageContent() {
                           })
                         }
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>
                   </div>
@@ -890,14 +892,14 @@ function CategoriesPageContent() {
                       <label className="block text-sm font-medium mb-1">
                         Project Category
                       </label>
-                      <div className="text-sm text-gray-700 font-medium">
+                      <div className="text-sm text-foreground font-medium">
                         {selectedProjectCategory
                           ? selectedProjectCategory.category_name
                           : 'No project category selected'}
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground">
                         Category Name
                       </label>
                       <Input
@@ -913,7 +915,7 @@ function CategoriesPageContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-foreground">
                         Description
                       </label>
                       <textarea
@@ -926,7 +928,7 @@ function CategoriesPageContent() {
                           })
                         }
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                       />
                     </div>
                   </div>

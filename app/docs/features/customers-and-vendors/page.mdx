@@ -1,0 +1,140 @@
+---
+title: Customers and Vendors
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Users, Building, PlusCircle, BarChart2, CheckCircle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Customers and Vendors</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Manage the core relationships that drive your business transactions.</p>
+</div>
+
+<Callout type="info" title="Why these matter">
+  Customers and vendors are at the heart of your transactions. Defining them
+  properly makes your reports and follow-ups much more useful.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle>Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Flame distinguishes between:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li><b>Customers</b> – entities you sell to.</li>
+      <li><b>Vendors</b> – entities you purchase from.</li>
+    </ul>
+    <p className="mt-4">Both are referenced from sales, expenses, invoices, and receipts. This enables reporting such as top customers by revenue or spend by vendor.</p>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Users className="h-6 w-6 mr-2" />Customers</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Customers are used primarily in:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li><b>Sales</b> records.</li>
+        <li><b>Invoices</b>.</li>
+        <li>Some reports (e.g. revenue by customer, outstanding invoices).</li>
+      </ul>
+      <h4 className="font-semibold mt-4">Typical fields:</h4>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Name.</li>
+        <li>Contact details (email, phone, address).</li>
+        <li>Billing information (tax ID, payment terms, etc.).</li>
+        <li>Optional tags or categories.</li>
+      </ul>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Building className="h-6 w-6 mr-2" />Vendors</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Vendors are used primarily in:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li><b>Expenses</b> records.</li>
+        <li><b>Receipts</b> and documentation.</li>
+        <li>Spend analysis reports.</li>
+      </ul>
+      <h4 className="font-semibold mt-4">Typical fields:</h4>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Name.</li>
+        <li>Contact / billing details.</li>
+        <li>Default expense category (optional).</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle>Common Workflows</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-6">
+    <div>
+      <h3 className="font-semibold flex items-center"><PlusCircle className="h-5 w-5 mr-2" />Add a new customer</h3>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Navigate to the <b>Customers</b> area.</li>
+        <li>Create a new customer record.</li>
+        <li>Fill in basic details and any required tax/billing fields.</li>
+        <li>Use this customer when recording sales or issuing invoices.</li>
+      </ol>
+    </div>
+    <Separator />
+    <div>
+      <h3 className="font-semibold flex items-center"><PlusCircle className="h-5 w-5 mr-2" />Add a new vendor</h3>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Open the <b>Vendors</b> section.</li>
+        <li>Create a vendor with a clear, recognizable name.</li>
+        <li>Optionally, set a default category (e.g. "Marketing") for their expenses.</li>
+        <li>Use the vendor when logging expenses or attaching receipts.</li>
+      </ol>
+    </div>
+    <Separator />
+    <div>
+      <h3 className="font-semibold flex items-center"><BarChart2 className="h-5 w-5 mr-2" />Analyze relationships</h3>
+      <p>With customers and vendors in place, use reports to:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Identify top customers by revenue.</li>
+        <li>See which vendors represent your largest spend.</li>
+        <li>Track trends over time (for example, year-over-year changes).</li>
+      </ul>
+    </div>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<Card>
+    <CardHeader>
+        <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+    </CardHeader>
+    <CardContent>
+        <ul className="list-disc pl-5 space-y-2">
+            <li>Use consistent naming (avoid duplicates like "Acme Inc" vs "Acme Limited").</li>
+            <li>Keep contact info up to date for billing and follow-up.</li>
+            <li>Use categories or tags to group similar customers or vendors where useful.</li>
+        </ul>
+    </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/features/sales" className="block p-4 border rounded-lg hover:bg-muted">Sales <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/expenses" className="block p-4 border rounded-lg hover:bg-muted">Expenses <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/invoices" className="block p-4 border rounded-lg hover:bg-muted">Invoices <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/receipts-and-attachments" className="block p-4 border rounded-lg hover:bg-muted">Receipts and attachments <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

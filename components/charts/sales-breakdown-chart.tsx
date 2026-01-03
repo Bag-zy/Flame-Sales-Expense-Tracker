@@ -89,7 +89,7 @@ export function SalesBreakdownChart() {
         if (selectedCycle) {
           params.append('cycleId', selectedCycle);
         }
-        const response = await fetch(`/api/reports/sales-breakdown?${params.toString()}`);
+        const response = await fetch(`/api/v1/reports/sales-breakdown?${params.toString()}`);
         const result = await response.json();
         if (result.status === 'success') {
           setData(result.data || []);
@@ -134,7 +134,7 @@ export function SalesBreakdownChart() {
 
   return (
     <>
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium tracking-tight">Total Sales</CardTitle>

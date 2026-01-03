@@ -1,0 +1,104 @@
+---
+title: Cycles
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Calendar, PlusCircle, CheckCircle, Edit, BarChart2, PiggyBank, Briefcase } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Cycles</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Organize your projects and finances into time periods or phases for better tracking.</p>
+</div>
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Calendar className="h-6 w-6 mr-2" />What are Cycles?</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Cycles are time-based groupings that help you organize your business activities. You can think of them as:</p>
+    <ul className="list-disc pl-5 mt-4 space-y-2">
+      <li>Budget periods (monthly, quarterly, annually)</li>
+      <li>Project phases</li>
+      <li>Seasonal periods</li>
+      <li>Any other time-based grouping that makes sense for your business</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><PlusCircle className="h-6 w-6 mr-2" />Creating a Cycle</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Navigate to the Cycles section in your application.</li>
+        <li>Click the "Create Cycle" button.</li>
+        <li>Enter the cycle name and description.</li>
+        <li>Set the start and end dates for the cycle.</li>
+        <li>Click "Save" to create the cycle.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Using Cycles</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Once created, you can assign projects, expenses, and sales to them:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Assign projects to a cycle during creation or editing.</li>
+        <li>Associate expenses and sales with specific cycles.</li>
+        <li>Filter reports by cycle to see performance within specific time periods.</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Edit className="h-6 w-6 mr-2" />Managing Cycles</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>You can edit existing cycles to update their details or mark them as completed. Completed cycles are typically read-only to preserve historical data integrity.</p>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Benefits of Using Cycles
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+  <div className="flex items-start space-x-4">
+    <BarChart2 className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Time-based Analysis</h3>
+      <p className="text-sm text-muted-foreground">Compare performance across different periods.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <PiggyBank className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Budget Tracking</h3>
+      <p className="text-sm text-muted-foreground">Set and monitor budgets for specific time periods.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <Briefcase className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Project Organization</h3>
+      <p className="text-sm text-muted-foreground">Group related activities by time period.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <BarChart2 className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Reporting</h3>
+      <p className="text-sm text-muted-foreground">Generate reports focused on specific cycles.</p>
+    </div>
+  </div>
+</div>

@@ -1,14 +1,124 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
-import { getSessionUser, isUserMidSetup } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
+import { isUserMidSetup } from '@/lib/api-auth'
+
+/**
+ * @swagger
+ * /api/expense-categories:
+ *   get:
+ *     operationId: listExpenseCategories
+ *     tags:
+ *       - Expense Categories
+ *     summary: List expense categories
+ *     description: Returns expense categories for the current organization (or global presets during setup).
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Expense categories fetched successfully.
+ *       401:
+ *         description: API key required.
+ *   post:
+ *     operationId: createExpenseCategory
+ *     tags:
+ *       - Expense Categories
+ *     summary: Create a new expense category
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category_name:
+ *                 type: string
+ *               project_category_id:
+ *                 type: integer
+ *                 nullable: true
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               organization_id:
+ *                 type: integer
+ *                 nullable: true
+ *               project_id:
+ *                 type: integer
+ *                 nullable: true
+ *             required:
+ *               - category_name
+ *     responses:
+ *       200:
+ *         description: Expense category created successfully.
+ *       401:
+ *         description: API key required.
+ *   put:
+ *     operationId: updateExpenseCategory
+ *     tags:
+ *       - Expense Categories
+ *     summary: Update an existing expense category
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: integer
+ *               category_name:
+ *                 type: string
+ *               project_category_id:
+ *                 type: integer
+ *                 nullable: true
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *             required:
+ *               - id
+ *               - category_name
+ *     responses:
+ *       200:
+ *         description: Expense category updated successfully.
+ *       401:
+ *         description: API key required.
+ *   delete:
+ *     operationId: deleteExpenseCategory
+ *     tags:
+ *       - Expense Categories
+ *     summary: Delete an expense category
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Expense category deleted successfully.
+ *       401:
+ *         description: API key required.
+ */
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
+    const user = await getApiOrSessionUser(request);
     const midSetup = await isUserMidSetup(request);
 
-    if (!sessionUser?.id || (!sessionUser.organizationId && !midSetup)) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    if (!user?.id || (!user.organizationId && !midSetup)) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -22,7 +132,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     if (projectId) {
       const result = await db.query(
@@ -36,7 +146,7 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await db.query(
-      'SELECT * FROM expense_category WHERE organization_id = $1 AND project_id IS NULL ORDER BY category_name',
+      'SELECT * FROM expense_category WHERE organization_id = $1 ORDER BY category_name',
       [organizationId]
     );
 
@@ -55,13 +165,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.id) {
-      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.id) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
 
     const { category_name, project_category_id, description, organization_id, project_id } = await request.json();
-    const orgId = organization_id || sessionUser.organizationId;
+    const orgId = organization_id || user.organizationId;
 
     if (!orgId) {
       return NextResponse.json({ status: 'error', message: 'Organization ID is required' }, { status: 400 });
@@ -90,11 +200,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request)
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 })
+    const user = await getApiOrSessionUser(request)
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
-    const { organizationId } = sessionUser
+    const { organizationId } = user
 
     const { id, category_name, project_category_id, description } = await request.json()
 
@@ -120,11 +230,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request)
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 })
+    const user = await getApiOrSessionUser(request)
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
-    const { organizationId } = sessionUser
+    const { organizationId } = user
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

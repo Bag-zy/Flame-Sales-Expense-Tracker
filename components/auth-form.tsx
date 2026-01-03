@@ -7,7 +7,7 @@ type AuthFormProps = {
   title?: string
 }
 
-export function AuthForm({ title = 'Flame Expense Tracker' }: AuthFormProps) {
+export function AuthForm({ title = 'Flame Sales & Expense Tracker' }: AuthFormProps) {
   const app = useStackApp()
 
   const handleSignIn = () => {

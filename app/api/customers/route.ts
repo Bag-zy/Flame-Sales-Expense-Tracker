@@ -1,14 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { getSessionUser } from '@/lib/api-auth';
+import { getApiOrSessionUser } from '@/lib/api-auth-keys';
+
+/**
+ * @swagger
+ * /api/customers:
+ *   get:
+ *     operationId: listCustomers
+ *     tags:
+ *       - Customers
+ *     summary: List customers in the current organization
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customers fetched successfully.
+ *       401:
+ *         description: API key required.
+ *   post:
+ *     operationId: createCustomer
+ *     tags:
+ *       - Customers
+ *     summary: Create a new customer
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 nullable: true
+ *               phone:
+ *                 type: string
+ *                 nullable: true
+ *               phone_number:
+ *                 type: string
+ *                 nullable: true
+ *             required:
+ *               - name
+ *     responses:
+ *       200:
+ *         description: Customer created successfully.
+ *   put:
+ *     operationId: updateCustomer
+ *     tags:
+ *       - Customers
+ *     summary: Update an existing customer
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: integer
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 nullable: true
+ *               phone:
+ *                 type: string
+ *                 nullable: true
+ *               phone_number:
+ *                 type: string
+ *                 nullable: true
+ *             required:
+ *               - id
+ *     responses:
+ *       200:
+ *         description: Customer updated successfully.
+ *   delete:
+ *     operationId: deleteCustomer
+ *     tags:
+ *       - Customers
+ *     summary: Delete a customer
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer deleted successfully.
+ */
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -41,11 +144,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { name, email, phone, phone_number } = await request.json();
 
@@ -71,11 +174,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { id, name, email, phone, phone_number } = await request.json();
 
@@ -106,11 +209,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

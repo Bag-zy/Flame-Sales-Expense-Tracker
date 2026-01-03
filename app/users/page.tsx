@@ -37,7 +37,7 @@ function UsersPageContent() {
       }
 
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch('/api/v1/users');
         const data = await response.json();
         if (data.status === 'success') {
           const found = (data.users as User[]).find((u) => u.email === user.primaryEmail);
@@ -63,7 +63,7 @@ function UsersPageContent() {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
 
     try {
-      const response = await fetch('/api/users', { method: 'DELETE' });
+      const response = await fetch('/api/v1/users', { method: 'DELETE' });
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
@@ -85,7 +85,7 @@ function UsersPageContent() {
 
     try {
       setSaving(true);
-      const response = await fetch('/api/users', {
+      const response = await fetch('/api/v1/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

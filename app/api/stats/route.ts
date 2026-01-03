@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/lib/api-auth';
+import { getApiOrSessionUser } from '@/lib/api-auth-keys';
 import { StatsService } from '@/lib/services/stats-service';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * @swagger
+ * /api/stats:
+ *   get:
+ *     operationId: getDashboardStats
+ *     tags:
+ *       - Reports
+ *     summary: Get dashboard statistics for the current organization
+ *     security:
+ *       - stackSession: []
+ *     responses:
+ *       200:
+ *         description: Dashboard statistics fetched successfully.
+ *       401:
+ *         description: API key required.
+ *       500:
+ *         description: Failed to fetch statistics.
+ */
+
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const userOrgId = sessionUser.organizationId;
+    const userOrgId = user.organizationId;
 
     const stats = await StatsService.getDashboardStatsByOrganization(userOrgId);
     return NextResponse.json(stats);

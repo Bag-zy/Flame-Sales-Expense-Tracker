@@ -1,0 +1,4152 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Flame Sales & Expense Tracker API",
+    "version": "1.0.0",
+    "description": "API for managing organizations, projects, expenses, sales, and related resources in the Flame Sales & Expense Tracker."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    },
+    {
+      "url": "https://flame-expense-tracker.bagumajonah3.workers.dev",
+      "description": "Production server (Cloudflare Workers)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key",
+        "description": "Flame API key in the format flame_ak_<prefix>_<secret>. Include it as an X-Api-Key header when calling these endpoints."
+      }
+    },
+    "schemas": {
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "project_category_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "category_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "vendor_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "department": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_datetime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_by": {
+            "type": "string"
+          }
+        }
+      },
+      "Expense": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "project_id": {
+            "type": "integer"
+          },
+          "cycle_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "category_id": {
+            "type": "integer"
+          },
+          "vendor_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "payment_method_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number"
+          },
+          "date_time_created": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created_by": {
+            "type": "string"
+          }
+        }
+      },
+      "Sale": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "project_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "cycle_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "product_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "variant_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "customer_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "customer_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_cost": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "cash_at_hand": {
+            "type": "number",
+            "nullable": true
+          },
+          "balance": {
+            "type": "number",
+            "nullable": true
+          },
+          "amount": {
+            "type": "number"
+          },
+          "amount_org_ccy": {
+            "type": "number",
+            "nullable": true
+          },
+          "sale_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "organization_id": {
+            "type": "integer"
+          },
+          "created_by": {
+            "type": "integer"
+          }
+        }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "country_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency_symbol": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "nullable": true
+          },
+          "employee_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "user_role": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "organization_id": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organization_id": {
+            "type": "integer"
+          },
+          "team_lead_id": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "ReportSummary": {
+        "type": "object",
+        "properties": {
+          "totalRevenue": {
+            "type": "number"
+          },
+          "totalExpenses": {
+            "type": "number"
+          },
+          "netProfit": {
+            "type": "number"
+          },
+          "totalBudgetAllotment": {
+            "type": "number"
+          },
+          "monthlyTrends": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string",
+                  "example": "2025-01"
+                },
+                "totalRevenue": {
+                  "type": "number"
+                },
+                "totalExpenses": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication and session endpoints"
+    },
+    {
+      "name": "Organizations",
+      "description": "Organizations and settings"
+    },
+    {
+      "name": "Projects",
+      "description": "Projects"
+    },
+    {
+      "name": "Project Categories",
+      "description": "Project category definitions"
+    },
+    {
+      "name": "Cycles",
+      "description": "Project cycles"
+    },
+    {
+      "name": "Category Presets",
+      "description": "Global project and expense category presets and application"
+    },
+    {
+      "name": "Expenses",
+      "description": "Expense records"
+    },
+    {
+      "name": "Expense Categories",
+      "description": "Expense category definitions"
+    },
+    {
+      "name": "Payment Methods",
+      "description": "Payment method definitions"
+    },
+    {
+      "name": "Vendors",
+      "description": "Vendors and suppliers"
+    },
+    {
+      "name": "Mileage Logs",
+      "description": "Mileage log entries"
+    },
+    {
+      "name": "Receipts",
+      "description": "Expense receipts and OCR data"
+    },
+    {
+      "name": "Sales",
+      "description": "Sales and revenue transactions"
+    },
+    {
+      "name": "Products",
+      "description": "Products and inventory"
+    },
+    {
+      "name": "Invoices",
+      "description": "Invoices and billing documents"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer records"
+    },
+    {
+      "name": "Users",
+      "description": "User accounts and roles"
+    },
+    {
+      "name": "Teams",
+      "description": "Teams and members"
+    },
+    {
+      "name": "Reports",
+      "description": "Reporting and analytics"
+    },
+    {
+      "name": "Lookups",
+      "description": "Reference data (countries, currencies, variant types, etc.)"
+    },
+    {
+      "name": "System",
+      "description": "System and internal endpoints (e.g. OpenAPI spec, MCP)"
+    }
+  ],
+  "paths": {
+    "/api/v1/accept-invitation": {
+      "get": {
+        "operationId": "validateInvitationToken",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Validate an invitation token",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitation is valid; returns invited user info."
+          },
+          "400": {
+            "description": "Missing token."
+          },
+          "404": {
+            "description": "Invitation invalid or expired."
+          }
+        }
+      },
+      "post": {
+        "operationId": "acceptInvitation",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Accept an invitation and activate account",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account activated successfully."
+          },
+          "400": {
+            "description": "Missing invitation token."
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "403": {
+            "description": "Authenticated user does not match invited user."
+          },
+          "404": {
+            "description": "Invitation invalid or expired."
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/expenses-by-category": {
+      "get": {
+        "operationId": "getExpensesByCategory",
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get aggregated expenses by category",
+        "description": "Returns total expenses by category for a project or the whole organization.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycleId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated expenses by category."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/categories/claim": {
+      "post": {
+        "operationId": "claimCategoriesForProject",
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Attach existing project and expense categories to a project",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "integer"
+                  },
+                  "projectCategoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "expenseCategoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "required": [
+                  "projectId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Categories claimed successfully."
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/category-presets/apply": {
+      "post": {
+        "operationId": "applyCategoryPresets",
+        "tags": [
+          "Category Presets"
+        ],
+        "summary": "Apply global project and expense category presets to an organization/project",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectCategoryPresetIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "projectCategoryPresetIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Presets applied successfully."
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/category-presets": {
+      "get": {
+        "operationId": "listCategoryPresets",
+        "tags": [
+          "Category Presets"
+        ],
+        "summary": "List global project category presets with their expense presets",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category presets fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/countries": {
+      "get": {
+        "operationId": "listCountries",
+        "tags": [
+          "Lookups"
+        ],
+        "summary": "List supported countries and their currencies",
+        "responses": {
+          "200": {
+            "description": "Countries fetched successfully."
+          },
+          "500": {
+            "description": "Failed to fetch countries."
+          }
+        }
+      }
+    },
+    "/api/v1/currencies": {
+      "get": {
+        "operationId": "listCurrencies",
+        "tags": [
+          "Lookups"
+        ],
+        "summary": "List supported currencies",
+        "responses": {
+          "200": {
+            "description": "Currencies fetched successfully."
+          },
+          "500": {
+            "description": "Failed to fetch currencies."
+          }
+        }
+      }
+    },
+    "/api/v1/customers": {
+      "get": {
+        "operationId": "listCustomers",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "List customers in the current organization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customers fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCustomer",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Create a new customer",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer created successfully."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateCustomer",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Update an existing customer",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer updated successfully."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCustomer",
+        "tags": [
+          "Customers"
+        ],
+        "summary": "Delete a customer",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer deleted successfully."
+          }
+        }
+      }
+    },
+    "/api/v1/cycles": {
+      "get": {
+        "operationId": "listCycles",
+        "tags": [
+          "Cycles"
+        ],
+        "summary": "List project cycles",
+        "description": "List cycles for the current organization, optionally filtered by project or organization.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "org_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cycles fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCycle",
+        "tags": [
+          "Cycles"
+        ],
+        "summary": "Create a new project cycle",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_id": {
+                    "type": "integer"
+                  },
+                  "cycle_number": {
+                    "type": "integer"
+                  },
+                  "cycle_name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "budget_allotment": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "project_id",
+                  "cycle_number"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cycle created successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateCycle",
+        "tags": [
+          "Cycles"
+        ],
+        "summary": "Update an existing project cycle",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_number": {
+                    "type": "integer"
+                  },
+                  "cycle_name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "budget_allotment": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cycle updated successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCycle",
+        "tags": [
+          "Cycles"
+        ],
+        "summary": "Delete a cycle",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cycle deleted successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/expense-categories": {
+      "get": {
+        "operationId": "listExpenseCategories",
+        "tags": [
+          "Expense Categories"
+        ],
+        "summary": "List expense categories",
+        "description": "Returns expense categories for the current organization (or global presets during setup).",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expense categories fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createExpenseCategory",
+        "tags": [
+          "Expense Categories"
+        ],
+        "summary": "Create a new expense category",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category_name": {
+                    "type": "string"
+                  },
+                  "project_category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "organization_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "category_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expense category created successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateExpenseCategory",
+        "tags": [
+          "Expense Categories"
+        ],
+        "summary": "Update an existing expense category",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "category_name": {
+                    "type": "string"
+                  },
+                  "project_category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "category_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expense category updated successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteExpenseCategory",
+        "tags": [
+          "Expense Categories"
+        ],
+        "summary": "Delete an expense category",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expense category deleted successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/expenses": {
+      "get": {
+        "operationId": "listExpenses",
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "List expenses",
+        "description": "List expenses for the authenticated user's organization with optional filters.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycle_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "100"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expenses fetched successfully."
+          },
+          "401": {
+            "description": "API key required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API key required"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createExpense",
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Create a new expense",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "vendor_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "payment_method_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "expense_name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "expense_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "amount"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expense created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "expense": {
+                      "$ref": "#/components/schemas/Expense"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API key required"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateExpense",
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Update an existing expense",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "vendor_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "payment_method_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "expense_name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "expense_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "amount"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Expense updated successfully."
+          },
+          "401": {
+            "description": "API key required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API key required"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteExpense",
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Delete an expense",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expense deleted successfully."
+          },
+          "401": {
+            "description": "API key required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API key required"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations": {
+      "post": {
+        "operationId": "sendInvitation",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Send an invitation email to join an organization (admin only)",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "project_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "required": [
+                  "email",
+                  "username",
+                  "role"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation sent successfully."
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "409": {
+            "description": "Active user with this email already exists."
+          }
+        }
+      }
+    },
+    "/api/v1/invoices/create": {
+      "post": {
+        "operationId": "createInvoice",
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Create an invoice PDF from scratch",
+        "description": "Creates an invoice for a recipient with line items and returns a generated PDF. Also persists invoice metadata and optionally links it to a project/cycle.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "projectId": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycleId": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "recipient": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                          "street": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "postalCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "city": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "description": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unitPrice": {
+                          "type": "number"
+                        },
+                        "vatRate": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "description",
+                        "quantity",
+                        "unitPrice"
+                      ]
+                    }
+                  },
+                  "invoiceNumber": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "invoiceDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "servicePeriod": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "recipient",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice PDF generated successfully.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/invoices/generate": {
+      "post": {
+        "operationId": "generateInvoiceFromSales",
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Generate an invoice PDF from existing sales",
+        "description": "Aggregates multiple sales for a single customer into a single invoice and returns a PDF.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "saleIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "recipient": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "address": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                          "street": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "postalCode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "city": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  "invoiceNumber": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "invoiceDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date",
+                    "nullable": true
+                  },
+                  "servicePeriod": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "currency": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "saleIds",
+                  "recipient"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice PDF generated successfully.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/invoices": {
+      "get": {
+        "operationId": "listInvoices",
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "List invoices for the current organization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycle_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "customer_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoices fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "getCurrentSessionUser",
+        "tags": [
+          "Auth",
+          "Users"
+        ],
+        "summary": "Get the current authenticated user",
+        "description": "Returns the current user associated with the provided API key.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authenticated user."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/mileage-logs": {
+      "get": {
+        "operationId": "listMileageLogs",
+        "tags": [
+          "Mileage Logs"
+        ],
+        "summary": "List mileage logs",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "expense_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mileage logs fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMileageLog",
+        "tags": [
+          "Mileage Logs"
+        ],
+        "summary": "Create a new mileage log",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expense_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "vehicle": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "starting_location": {
+                    "type": "string"
+                  },
+                  "ending_location": {
+                    "type": "string"
+                  },
+                  "distance": {
+                    "type": "number"
+                  },
+                  "distance_unit": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "required": [
+                  "starting_location",
+                  "ending_location",
+                  "distance",
+                  "purpose",
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mileage log created successfully."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateMileageLog",
+        "tags": [
+          "Mileage Logs"
+        ],
+        "summary": "Update an existing mileage log",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "distance": {
+                    "type": "number"
+                  },
+                  "start_location": {
+                    "type": "string"
+                  },
+                  "end_location": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mileage log updated successfully."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMileageLog",
+        "tags": [
+          "Mileage Logs"
+        ],
+        "summary": "Delete a mileage log",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mileage log deleted successfully."
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/all": {
+      "get": {
+        "operationId": "listOrganizationsCreatedByUser",
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List organizations created by the current user",
+        "description": "Returns organizations created by the user associated with the provided API key.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organizations fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/organizations": {
+      "get": {
+        "operationId": "getCurrentOrganization",
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get the current user's organization",
+        "description": "Returns the organization associated with the authenticated user's session.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization fetched successfully (or empty list if user has no organization).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "organizations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Organization"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "500": {
+            "description": "Failed to fetch organizations."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrganization",
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create a new organization and assign current user as admin",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "currencySymbol": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Organization created successfully and current user updated as admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "organization": {
+                      "$ref": "#/components/schemas/Organization"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (e.g. missing name)."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateOrganization",
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Update an existing organization (admin only)",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "currencySymbol": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Organization updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "organization": {
+                      "$ref": "#/components/schemas/Organization"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "403": {
+            "description": "Forbidden – user is not allowed to update this organization."
+          }
+        }
+      }
+    },
+    "/api/v1/payment-methods": {
+      "get": {
+        "operationId": "listPaymentMethods",
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "List payment methods",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment methods fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPaymentMethod",
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "Create a new payment method",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "method_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "method_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment method created successfully."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePaymentMethod",
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "Update an existing payment method",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "method_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "method_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment method updated successfully."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePaymentMethod",
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "Delete a payment method",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment method deleted successfully."
+          }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "operationId": "listProducts",
+        "tags": [
+          "Products"
+        ],
+        "summary": "List products with their variants",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products fetched successfully."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProduct",
+        "tags": [
+          "Products"
+        ],
+        "summary": "Create a new product with variants",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "reorder_level": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "category": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "project_category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "attributes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unit_cost": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "selling_price": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "quantity_in_stock": {
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "unit_of_measurement": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "images": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "attributes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "product_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product created successfully."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateProduct",
+        "tags": [
+          "Products"
+        ],
+        "summary": "Update an existing product and its variants",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "product_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "reorder_level": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "category": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "project_category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "attributes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "product_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated successfully."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProduct",
+        "tags": [
+          "Products"
+        ],
+        "summary": "Delete a product",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product deleted successfully."
+          }
+        }
+      }
+    },
+    "/api/v1/project-categories": {
+      "get": {
+        "operationId": "listProjectCategories",
+        "tags": [
+          "Project Categories"
+        ],
+        "summary": "List project categories",
+        "description": "Returns project categories for the current organization (or global presets during setup).",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project categories fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProjectCategory",
+        "tags": [
+          "Project Categories"
+        ],
+        "summary": "Create a new project category",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "is_custom": {
+                    "type": "boolean"
+                  },
+                  "organization_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "category_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project category created successfully."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateProjectCategory",
+        "tags": [
+          "Project Categories"
+        ],
+        "summary": "Update an existing project category",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "category_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "is_custom": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "id",
+                  "category_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project category updated successfully."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProjectCategory",
+        "tags": [
+          "Project Categories"
+        ],
+        "summary": "Delete a project category",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project category deleted successfully."
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "tags": [
+          "Projects"
+        ],
+        "summary": "List projects",
+        "description": "List projects for the authenticated user's organization, optionally filtered by organization id.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "org_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional override of organization id (admin / internal use)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects fetched successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Project"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProject",
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Create a new project",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_name": {
+                    "type": "string"
+                  },
+                  "project_category_id": {
+                    "type": "integer"
+                  },
+                  "currency_code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "project_name",
+                  "project_category_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "project": {
+                      "$ref": "#/components/schemas/Project"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateProject",
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Update an existing project",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "project_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "project_category_id": {
+                    "type": "integer"
+                  },
+                  "expense_category_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "currency_code": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "project_name",
+                  "project_category_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated successfully."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProject",
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Delete a project",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the project to delete."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project deleted successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/receipts": {
+      "get": {
+        "operationId": "listReceipts",
+        "tags": [
+          "Receipts"
+        ],
+        "summary": "List receipts for expenses",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycle_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receipts fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createReceipt",
+        "tags": [
+          "Receipts"
+        ],
+        "summary": "Create a receipt record linked to an expense",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expense_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "file_path": {
+                    "type": "string"
+                  },
+                  "raw_text": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "structured_data": {
+                    "type": "object",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "file_path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Receipt created successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/budget-vs-actual": {
+      "get": {
+        "operationId": "getBudgetVsActualByCycle",
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get budget vs actual amounts by cycle",
+        "description": "Returns budget, actual expenses, actual revenue and variance per cycle for an organization or project.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Budget vs actual data per cycle."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/pnl-by-project": {
+      "get": {
+        "operationId": "getPnlByProject",
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get profit and loss by project",
+        "description": "Returns total revenue, total expenses, and net profit per project for the current organization.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycleId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "P&L data by project."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/sales-breakdown": {
+      "get": {
+        "operationId": "getSalesBreakdown",
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get sales breakdown by product or customer",
+        "description": "Returns aggregated sales amounts grouped by product or customer, optionally filtered by project/cycle.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dimension",
+            "required": false,
+            "description": "Breakdown dimension (product or customer).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "product",
+                "customer"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycleId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sales breakdown data."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/reports/summary": {
+      "get": {
+        "operationId": "getSummaryReport",
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get high-level financial summary",
+        "description": "Returns total revenue, total expenses, net profit, budget and monthly trends for an organization or project.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orgId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "projectId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycleId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary report data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "totalRevenue": {
+                      "type": "number"
+                    },
+                    "totalExpenses": {
+                      "type": "number"
+                    },
+                    "netProfit": {
+                      "type": "number"
+                    },
+                    "totalBudgetAllotment": {
+                      "type": "number"
+                    },
+                    "monthlyTrends": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ReportSummary/properties/monthlyTrends/items"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/sales": {
+      "get": {
+        "operationId": "listSales",
+        "tags": [
+          "Sales"
+        ],
+        "summary": "List sales",
+        "description": "List sales for the authenticated user's organization with optional filters.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cycle_id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "100"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sales fetched successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "sales": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Sale"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSale",
+        "tags": [
+          "Sales"
+        ],
+        "summary": "Create a new sale",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "product_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "variant_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "customer": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "quantity": {
+                    "type": "number"
+                  },
+                  "unit_cost": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "price": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sale_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "cash_at_hand": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "balance": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "quantity",
+                  "price"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sale created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "sale": {
+                      "$ref": "#/components/schemas/Sale"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSale",
+        "tags": [
+          "Sales"
+        ],
+        "summary": "Update an existing sale",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "project_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "cycle_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "product_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "variant_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "customer": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "quantity": {
+                    "type": "number"
+                  },
+                  "unit_cost": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "price": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sale_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "cash_at_hand": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "balance": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "quantity",
+                  "price"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sale updated successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSale",
+        "tags": [
+          "Sales"
+        ],
+        "summary": "Delete a sale",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sale deleted successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "operationId": "getDashboardStats",
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get dashboard statistics for the current organization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard statistics fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "500": {
+            "description": "Failed to fetch statistics."
+          }
+        }
+      }
+    },
+    "/api/v1/team-members": {
+      "post": {
+        "operationId": "addTeamMember",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Add a user to a team (admin only)",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "team_id": {
+                    "type": "integer"
+                  },
+                  "user_id": {
+                    "type": "integer"
+                  },
+                  "role": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "team_id",
+                  "user_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User added to team."
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeTeamMember",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Remove a user from a team (admin only)",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "team_id": {
+                    "type": "integer"
+                  },
+                  "user_id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "team_id",
+                  "user_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User removed from team."
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{teamId}/members": {
+      "get": {
+        "operationId": "listTeamMembers",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "List members of a specific team",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "teamId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team members fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        }
+      }
+    },
+    "/api/v1/teams": {
+      "get": {
+        "operationId": "listTeams",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "List teams in the current organization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teams fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTeam",
+        "tags": [
+          "Teams"
+        ],
+        "summary": "Create a new team (admin only)",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "team_lead_id": {
+                    "type": "integer",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Team created successfully."
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "operationId": "listUsers",
+        "tags": [
+          "Users"
+        ],
+        "summary": "List users in the current organization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users fetched successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/User"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCurrentUserAccount",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete the currently authenticated user account",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account deleted successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCurrentUserProfile",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update profile details for the current user",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "employee_name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateUserRole",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update a user's role (admin only)",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "integer"
+                  },
+                  "role": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "userId",
+                  "role"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User role updated successfully."
+          },
+          "400": {
+            "description": "Missing userId or role."
+          },
+          "401": {
+            "description": "API key required."
+          },
+          "403": {
+            "description": "Forbidden."
+          }
+        }
+      }
+    },
+    "/api/v1/variant-types": {
+      "get": {
+        "operationId": "listVariantTypes",
+        "tags": [
+          "Lookups"
+        ],
+        "summary": "List product variant types and their units of measurement",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Variant types fetched successfully (seeding if necessary)."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    },
+    "/api/v1/vendors": {
+      "get": {
+        "operationId": "listVendors",
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "List vendors in the current organization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendors fetched successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "createVendor",
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Create a new vendor",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "vendor_name": {
+                    "type": "string"
+                  },
+                  "contact_person": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "vendor_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vendor created successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateVendor",
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Update an existing vendor",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "vendor_name": {
+                    "type": "string"
+                  },
+                  "contact_person": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "address": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "vendor_name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vendor updated successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteVendor",
+        "tags": [
+          "Vendors"
+        ],
+        "summary": "Delete a vendor",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vendor deleted successfully."
+          },
+          "401": {
+            "description": "API key required."
+          }
+        }
+      }
+    }
+  }
+}

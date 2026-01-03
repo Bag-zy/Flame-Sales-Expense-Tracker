@@ -1,19 +1,198 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
-import { getSessionUser } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
+
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     operationId: listProducts
+ *     tags:
+ *       - Products
+ *     summary: List products with their variants
+ *     security:
+ *       - stackSession: []
+ *     responses:
+ *       200:
+ *         description: Products fetched successfully.
+ *   post:
+ *     operationId: createProduct
+ *     tags:
+ *       - Products
+ *     summary: Create a new product with variants
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               product_name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               reorder_level:
+ *                 type: integer
+ *                 nullable: true
+ *               category:
+ *                 type: string
+ *                 nullable: true
+ *               project_id:
+ *                 type: integer
+ *                 nullable: true
+ *               cycle_id:
+ *                 type: integer
+ *                 nullable: true
+ *               project_category_id:
+ *                 type: integer
+ *                 nullable: true
+ *               status:
+ *                 type: string
+ *                 nullable: true
+ *               attributes:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               variants:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     label:
+ *                       type: string
+ *                       nullable: true
+ *                     unit_cost:
+ *                       type: number
+ *                       nullable: true
+ *                     selling_price:
+ *                       type: number
+ *                       nullable: true
+ *                     quantity_in_stock:
+ *                       type: integer
+ *                       nullable: true
+ *                     unit_of_measurement:
+ *                       type: string
+ *                       nullable: true
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     attributes:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *             required:
+ *               - product_name
+ *     responses:
+ *       200:
+ *         description: Product created successfully.
+ *   put:
+ *     operationId: updateProduct
+ *     tags:
+ *       - Products
+ *     summary: Update an existing product and its variants
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: integer
+ *               product_name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               reorder_level:
+ *                 type: integer
+ *                 nullable: true
+ *               category:
+ *                 type: string
+ *                 nullable: true
+ *               project_id:
+ *                 type: integer
+ *                 nullable: true
+ *               cycle_id:
+ *                 type: integer
+ *                 nullable: true
+ *               project_category_id:
+ *                 type: integer
+ *                 nullable: true
+ *               status:
+ *                 type: string
+ *                 nullable: true
+ *               attributes:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               variants:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *             required:
+ *               - id
+ *               - product_name
+ *     responses:
+ *       200:
+ *         description: Product updated successfully.
+ *   delete:
+ *     operationId: deleteProduct
+ *     tags:
+ *       - Products
+ *     summary: Delete a product
+ *     security:
+ *       - stackSession: []
+ *     parameters:
+ *       - in: query
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully.
+ */
 
 export async function GET(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
-    const result = await db.query(
-      'SELECT * FROM products WHERE organization_id = $1 ORDER BY product_name',
-      [organizationId]
-    );
+    const result = user.role === 'admin'
+      ? await db.query(
+          'SELECT * FROM products WHERE organization_id = $1 ORDER BY product_name',
+          [organizationId]
+        )
+      : await db.query(
+          `
+          SELECT *
+            FROM products
+           WHERE organization_id = $1
+             AND project_id IS NOT NULL
+             AND project_id IN (
+               SELECT pa.project_id
+                 FROM project_assignments pa
+                WHERE pa.user_id = $2
+               UNION
+               SELECT pa.project_id
+                 FROM project_assignments pa
+                 JOIN team_members tm ON tm.team_id = pa.team_id
+                WHERE tm.user_id = $2
+             )
+           ORDER BY product_name
+          `,
+          [organizationId, user.id]
+        );
 
     const productRows = result.rows;
     const productIds = productRows.map((row) => row.id);
@@ -115,19 +294,45 @@ function generateSKU(productName: string, variantValue?: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId, id: userId } = sessionUser;
+    const { organizationId, id: userId } = user;
 
     const body = await request.json();
     const { product_name, description, reorder_level, category, variants, project_id, cycle_id, project_category_id, status, attributes } = body;
+
+    if (user.role !== 'admin') {
+      if (!project_id) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+
+      const access = await db.query(
+        `
+        SELECT 1
+          FROM project_assignments pa
+         WHERE pa.project_id = $1 AND pa.user_id = $2
+        UNION
+        SELECT 1
+          FROM project_assignments pa
+          JOIN team_members tm ON tm.team_id = pa.team_id
+         WHERE pa.project_id = $1 AND tm.user_id = $2
+         LIMIT 1
+        `,
+        [project_id, userId],
+      );
+
+      if (!access.rows.length) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const safeVariants = Array.isArray(variants) ? variants : [];
     const primaryVariant = safeVariants[0] || {};
     const sku = generateSKU(product_name, primaryVariant.variant_value);
     const safeAttributes = Array.isArray(attributes) ? attributes : [];
-    
+
     const result = await db.query(
       'INSERT INTO products (product_name, description, sku, unit_cost, selling_price, quantity_in_stock, reorder_level, category, variant_name, variant_value, unit_of_measurement, images, project_id, cycle_id, project_category_id, organization_id, created_by, status, attributes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING *',
       [
@@ -151,7 +356,7 @@ export async function POST(request: NextRequest) {
         status || 'enabled',
         JSON.stringify(safeAttributes),
       ]
-    )
+    );
 
     const product = result.rows[0];
 
@@ -177,33 +382,68 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      status: 'success', 
-      product
-    })
+    return NextResponse.json({
+      status: 'success',
+      product,
+    });
   } catch (error) {
-    console.error('Product creation error:', error)
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to create product' 
-    }, { status: 500 })
+    console.error('Product creation error:', error);
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to create product',
+    }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const body = await request.json();
     const { id, product_name, description, reorder_level, category, variants, project_id, cycle_id, project_category_id, status, attributes } = body;
+
+    if (user.role !== 'admin') {
+      const existing = await db.query(
+        'SELECT project_id FROM products WHERE id = $1 AND organization_id = $2',
+        [id, organizationId],
+      );
+      if (!existing.rows.length) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+
+      const targetProjectId = project_id ?? existing.rows[0]?.project_id;
+      if (!targetProjectId) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+
+      const access = await db.query(
+        `
+        SELECT 1
+          FROM project_assignments pa
+         WHERE pa.project_id = $1 AND pa.user_id = $2
+        UNION
+        SELECT 1
+          FROM project_assignments pa
+          JOIN team_members tm ON tm.team_id = pa.team_id
+         WHERE pa.project_id = $1 AND tm.user_id = $2
+         LIMIT 1
+        `,
+        [targetProjectId, user.id],
+      );
+
+      if (!access.rows.length) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const safeVariants = Array.isArray(variants) ? variants : [];
     const primaryVariant = safeVariants[0] || {};
     const safeAttributes = Array.isArray(attributes) ? attributes : [];
-    
+
     const result = await db.query(
       'UPDATE products SET product_name = $1, description = $2, unit_cost = $3, selling_price = $4, quantity_in_stock = $5, reorder_level = $6, category = $7, variant_name = $8, variant_value = $9, unit_of_measurement = $10, images = $11, project_id = $12, cycle_id = $13, project_category_id = $14, status = $15, attributes = $16 WHERE id = $17 AND organization_id = $18 RETURNING *',
       [
@@ -226,7 +466,7 @@ export async function PUT(request: NextRequest) {
         id,
         organizationId,
       ]
-    )
+    );
 
     const product = result.rows[0];
 
@@ -267,33 +507,63 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       status: 'success',
       product,
-    })
+    });
   } catch (error) {
-    console.error('Product update error:', error)
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to update product' 
-    }, { status: 500 })
+    console.error('Product update error:', error);
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to update product',
+    }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId } = sessionUser;
+    const { organizationId } = user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
-    await db.query('DELETE FROM products WHERE id = $1 AND organization_id = $2', [id, organizationId])
-    
-    return NextResponse.json({ 
-      status: 'success', 
-      message: 'Product deleted successfully' 
-    })
+
+    if (user.role !== 'admin') {
+      const existing = await db.query(
+        'SELECT project_id FROM products WHERE id = $1 AND organization_id = $2',
+        [id, organizationId],
+      );
+      const project_id = existing.rows[0]?.project_id;
+      if (!project_id) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+
+      const access = await db.query(
+        `
+        SELECT 1
+          FROM project_assignments pa
+         WHERE pa.project_id = $1 AND pa.user_id = $2
+        UNION
+        SELECT 1
+          FROM project_assignments pa
+          JOIN team_members tm ON tm.team_id = pa.team_id
+         WHERE pa.project_id = $1 AND tm.user_id = $2
+         LIMIT 1
+        `,
+        [project_id, user.id],
+      );
+
+      if (!access.rows.length) {
+        return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 });
+      }
+    }
+
+    await db.query('DELETE FROM products WHERE id = $1 AND organization_id = $2', [id, organizationId]);
+
+    return NextResponse.json({
+      status: 'success',
+      message: 'Product deleted successfully',
+    });
   } catch (error) {
     return NextResponse.json({ 
       status: 'error', 

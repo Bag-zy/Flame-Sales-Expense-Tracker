@@ -4,13 +4,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Switcher } from "@/components/ui/shadcn-io/navbar-12/Switcher";
 
 interface PaymentMethodFormData {
   method_type: string;
@@ -114,23 +108,16 @@ export function PaymentMethodForm({
           <label className="block text-sm font-medium text-foreground">
             Method Type
           </label>
-          <Select
+          <Switcher
+            items={methodTypes.map((type) => ({ value: type, label: type }))}
             value={formData.method_type}
-            onValueChange={(value) =>
-              setFormData({ ...formData, method_type: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent>
-              {methodTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(value) => setFormData({ ...formData, method_type: value })}
+            placeholder="Select type"
+            searchPlaceholder="Search type..."
+            emptyText="No method types found."
+            widthClassName="w-full"
+            allowClear={false}
+          />
         </div>
       </div>
       <div>

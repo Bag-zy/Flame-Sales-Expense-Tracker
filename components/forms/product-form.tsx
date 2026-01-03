@@ -2,11 +2,12 @@
 
 import { useState, useEffect, ChangeEvent } from 'react';
 import { toast } from 'sonner';
-import { Trash2, Plus, Info, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DialogFooter } from '@/components/ui/dialog';
+import { Switcher } from '@/components/ui/shadcn-io/navbar-12/Switcher';
 import { useFilter } from '@/lib/context/filter-context';
+import { Trash2, Plus, Info, Upload, X } from 'lucide-react';
+import { DialogFooter } from '@/components/ui/dialog';
 
 interface VariantType {
   id: number;
@@ -192,7 +193,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
 
   const loadVariantTypes = async () => {
     try {
-      const response = await fetch('/api/variant-types');
+      const response = await fetch('/api/v1/variant-types');
       const data = await response.json();
       if (data.status === 'success') {
         setVariantTypes(data.variantTypes);
@@ -282,7 +283,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
 
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/products', {
+      const response = await fetch('/api/v1/products', {
         method: editingProduct ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -423,8 +424,8 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                 <label className="block text-sm font-medium text-foreground">Product Name *</label>
                 <div className="group relative">
                   <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    Overall name of the product (e.g., "Office Chair", "Rice 25kg")
+                  <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Overall name of the product (e.g., &quot;Office Chair&quot;, &quot;Rice 25kg&quot;)
                   </div>
                 </div>
               </div>
@@ -441,7 +442,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                 <label className="block text-sm font-medium text-foreground">SKU *</label>
                 <div className="group relative">
                   <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                     System-generated stock keeping unit used to uniquely identify this product
                   </div>
                 </div>
@@ -457,7 +458,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                 <label className="block text-sm font-medium text-foreground">Reorder Level</label>
                 <div className="group relative">
                   <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                     Minimum stock level that should trigger a restock alert
                   </div>
                 </div>
@@ -477,7 +478,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
               <label className="block text-sm font-medium text-foreground">Description</label>
               <div className="group relative">
                 <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                   Optional extra details about the product to help you and others recognize it
                 </div>
               </div>
@@ -525,8 +526,8 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                 <label className="block text-sm font-medium text-foreground">Variant Name</label>
                 <div className="group relative">
                   <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    Friendly name for this specific variant (e.g., "Red Medium", "5kg Bag")
+                  <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Friendly name for this specific variant (e.g., &quot;Red Medium&quot;, &quot;5kg Bag&quot;)
                   </div>
                 </div>
               </div>
@@ -547,58 +548,55 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                     <label className="block text-sm font-medium text-foreground">Attribute</label>
                     <div className="group relative">
                       <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         Choose what kind of attribute this is (e.g., Size, Color, Weight)
                       </div>
                     </div>
                   </div>
-                  <select
+                  <Switcher
+                    items={variantTypes.map((type) => ({ value: type.type_name, label: type.type_name }))}
                     value={attr.type}
-                    onChange={(e) => handleAttributeTypeChange(index, attrIndex, e.target.value)}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                  >
-                    <option value="">Select attribute</option>
-                    {variantTypes.map((type) => (
-                      <option key={type.id} value={type.type_name}>
-                        {type.type_name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => handleAttributeTypeChange(index, attrIndex, value)}
+                    placeholder="Select attribute"
+                    searchPlaceholder="Search attribute..."
+                    emptyText="No attributes found."
+                    widthClassName="w-full"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-1 mb-1">
                     <label className="block text-sm font-medium text-foreground">Attribute Value</label>
                     <div className="group relative">
                       <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         Select the predefined value for this attribute (e.g., cm, kg, Red)
                       </div>
                     </div>
                   </div>
-                  <select
+                  <Switcher
+                    items={
+                      attr.type
+                        ? getAvailableUnits(attr.type).map((unit) => ({
+                            value: unit.unit_name,
+                            label: unit.unit_name,
+                          }))
+                        : []
+                    }
                     value={attr.unit}
-                    onChange={(e) => {
-                      const newUnit = e.target.value;
-                      updateAttribute(index, attrIndex, 'unit', newUnit);
-                    }}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    onChange={(value) => updateAttribute(index, attrIndex, 'unit', value)}
                     disabled={!attr.type}
-                  >
-                    <option value="">Select value</option>
-                    {attr.type &&
-                      getAvailableUnits(attr.type).map((unit) => (
-                        <option key={unit.id} value={unit.unit_name}>
-                          {unit.unit_name}
-                        </option>
-                      ))}
-                  </select>
+                    placeholder="Select value"
+                    searchPlaceholder="Search value..."
+                    emptyText="No values found."
+                    widthClassName="w-full"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-1 mb-1">
                     <label className="block text-sm font-medium text-foreground">Value</label>
                     <div className="group relative">
                       <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         Text or number that goes with the attribute value (e.g., 5 cm, Red, Large)
                       </div>
                     </div>
@@ -642,7 +640,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                   </label>
                   <div className="group relative">
                     <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                       How much it costs you to buy one unit of this variant
                     </div>
                   </div>
@@ -671,7 +669,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                   </label>
                   <div className="group relative">
                     <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                       Price you charge your customer for one unit of this variant
                     </div>
                   </div>
@@ -696,7 +694,7 @@ export function ProductForm({ editingProduct, selectedProject, selectedCycle, pr
                   <label className="block text-sm font-medium text-foreground">Quantity in Stock</label>
                   <div className="group relative">
                     <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                       Current number of units available in inventory for this variant
                     </div>
                   </div>

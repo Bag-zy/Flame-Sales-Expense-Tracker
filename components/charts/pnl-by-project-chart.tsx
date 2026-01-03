@@ -94,7 +94,7 @@ export function PnlByProjectChart() {
           params.append('cycleId', selectedCycle);
         }
 
-        const response = await fetch(`/api/reports/pnl-by-project?${params.toString()}`);
+        const response = await fetch(`/api/v1/reports/pnl-by-project?${params.toString()}`);
         const result = await response.json();
 
         if (result.status === 'success') {
@@ -141,7 +141,7 @@ export function PnlByProjectChart() {
 
   return (
     <>
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 text-sm">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium tracking-tight">Total Revenue</CardTitle>

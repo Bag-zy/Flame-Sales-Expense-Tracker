@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionUser } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
 import { db } from '@/lib/database'
 
 // Direct database implementation of MCP tools
@@ -103,11 +103,11 @@ export async function POST(request: NextRequest) {
   try {
     const { tool, params } = await request.json()
 
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
-    const { organizationId, id: userId } = sessionUser;
+    const { organizationId, id: userId } = user;
 
     const enhancedParams = { ...params, organization_id: organizationId, created_by: userId };
 

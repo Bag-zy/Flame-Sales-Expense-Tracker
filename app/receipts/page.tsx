@@ -30,7 +30,7 @@ interface Receipt {
 }
 
 function ReceiptsPageContent() {
-  const { selectedProject, selectedCycle, projects, cycles, setSelectedProject, setSelectedCycle } = useFilter();
+  const { selectedProject, selectedCycle } = useFilter();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
@@ -45,7 +45,8 @@ function ReceiptsPageContent() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const url = new URL('/api/receipts', window.location.origin);
+      const url = new URL('/api/v1/receipts', window.location.origin);
+
       if (selectedProject) url.searchParams.set('project_id', selectedProject);
       if (selectedCycle) url.searchParams.set('cycle_id', selectedCycle);
       if (searchTerm) url.searchParams.set('search', searchTerm);
@@ -85,112 +86,82 @@ function ReceiptsPageContent() {
   return (
     <AuthGuard>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Receipts</h1>
-        <div className="text-sm text-muted-foreground">
-          View your uploaded receipts. Add new receipts from the Expenses page.
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <h1 className="text-3xl font-bold">Receipts</h1>
+          <div className="text-sm text-muted-foreground">
+            View your uploaded receipts. Add new receipts from the Expenses page.
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap gap-4 items-end mt-2">
-        <div>
-          <label className="block text-sm font-medium text-foreground">Project</label>
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="mt-1 w-48 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-          >
-            <option value="">All projects</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id.toString()}>
-                {project.project_name}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-wrap gap-4 items-end mt-2">
+          <div className="ml-auto flex gap-2 items-center">
+            <Input
+              placeholder="Search receipts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64"
+            />
+            <Button type="button" onClick={handleSearch}>
+              <SearchIcon className="w-4 h-4 mr-2" />
+              Search
+            </Button>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-foreground">Cycle</label>
-          <select
-            value={selectedCycle}
-            onChange={(e) => setSelectedCycle(e.target.value)}
-            className="mt-1 w-48 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-            disabled={!selectedProject}
-          >
-            <option value="">All cycles</option>
-            {cycles.map((cycle) => (
-              <option key={cycle.id} value={cycle.id.toString()}>
-                {cycle.cycle_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="ml-auto flex gap-2 items-center">
-          <Input
-            placeholder="Search receipts..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64"
-          />
-          <Button type="button" onClick={handleSearch}>
-            <SearchIcon className="w-4 h-4 mr-2" />
-            Search
-          </Button>
-        </div>
-      </div>
 
-      <div className="mt-4 max-h-[70vh] overflow-y-auto pr-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {receipts.map((receipt) => (
-            <Card key={receipt.id} className="w-full">
-              <CardHeader className="px-4 py-3 border-b border-border">
-                <div className="flex flex-col">
-                  <CardTitle className="text-sm font-semibold">
-                    {receipt.structured_data?.details?.receipt_number || `Receipt #${receipt.id}`}
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    {receipt.structured_data?.vendor?.name || 'Unknown Vendor'}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                <div className="text-2xl font-bold text-green-600">
-                  ${(receipt.structured_data?.summary?.total_due ?? 0).toLocaleString()}
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                    {new Date(receipt.structured_data?.details?.date || receipt.upload_date).toLocaleDateString()}
-                  </span>
-                  {receipt.file_path && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
-                      <ImageIcon className="w-3 h-3 mr-1" /> Has Image
+        <div className="mt-4 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {receipts.map((receipt) => (
+              <Card key={receipt.id} className="w-full">
+                <CardHeader className="px-4 py-3 border-b border-border">
+                  <div className="flex flex-col">
+                    <CardTitle className="text-sm font-semibold">
+                      {receipt.structured_data?.details?.receipt_number || `Receipt #${receipt.id}`}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {receipt.structured_data?.vendor?.name || 'Unknown Vendor'}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                  <div className="text-2xl font-bold text-green-600">
+                    ${(receipt.structured_data?.summary?.total_due ?? 0).toLocaleString()}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                      {new Date(receipt.structured_data?.details?.date || receipt.upload_date).toLocaleDateString()}
                     </span>
+                    {receipt.file_path && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                        <ImageIcon className="w-3 h-3 mr-1" /> Has Image
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="px-4 pb-4 pt-0 flex items-center gap-2">
+                  {receipt.file_path && (
+                    <Button size="sm" variant="outline" onClick={() => handleViewImage(receipt)}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Image
+                    </Button>
                   )}
+                  {receipt.raw_text && (
+                    <Button size="sm" variant="outline" onClick={() => handleViewOcr(receipt)}>
+                      <Scan className="w-4 h-4 mr-2" />
+                      View OCR Data
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            ))}
+            {receipts.length === 0 && (
+              <div className="col-span-full">
+                <div className="p-8 bg-card rounded-lg border border-border text-center text-muted-foreground">
+                  <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
+                  <p>No receipts found. Upload receipts from the Expenses page to see them here.</p>
                 </div>
-              </CardContent>
-              <CardFooter className="px-4 pb-4 pt-0 flex items-center gap-2">
-                {receipt.file_path && (
-                  <Button size="sm" variant="outline" onClick={() => handleViewImage(receipt)}>
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Image
-                  </Button>
-                )}
-                {receipt.raw_text && (
-                  <Button size="sm" variant="outline" onClick={() => handleViewOcr(receipt)}>
-                    <Scan className="w-4 h-4 mr-2" />
-                    View OCR Data
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
-          {receipts.length === 0 && (
-            <div className="col-span-full">
-              <div className="p-8 bg-card rounded-lg border border-border text-center text-muted-foreground">
-                <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
-                <p>No receipts found. Upload receipts from the Expenses page to see them here.</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -251,11 +222,10 @@ function ReceiptsPageContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
     </AuthGuard>
   );
 }
 
 export default function ReceiptsPage() {
-  return <ReceiptsPageContent />
+  return <ReceiptsPageContent />;
 }

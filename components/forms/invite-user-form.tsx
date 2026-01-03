@@ -4,8 +4,8 @@ import { useState, useEffect, FormEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DialogFooter } from '@/components/ui/dialog';
+import { MultiSwitcher, Switcher } from '@/components/ui/shadcn-io/navbar-12/Switcher';
 
 interface Project {
   id: number;
@@ -29,7 +29,7 @@ export function InviteUserForm({ onSuccess, onCancel }: InviteUserFormProps) {
     // Fetch projects to populate the multi-select
     const fetchProjects = async () => {
       try {
-        const response = await fetch('/api/projects');
+        const response = await fetch('/api/v1/projects');
         const data = await response.json();
         if (data.status === 'success') {
           setProjects(data.projects);
@@ -49,7 +49,7 @@ export function InviteUserForm({ onSuccess, onCancel }: InviteUserFormProps) {
     }
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/invitations', {
+      const response = await fetch('/api/v1/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, username, role, project_ids: selectedProjects }),
@@ -68,13 +68,7 @@ export function InviteUserForm({ onSuccess, onCancel }: InviteUserFormProps) {
     }
   };
 
-  const handleProjectSelection = (projectId: number) => {
-    setSelectedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId) 
-        : [...prev, projectId]
-    );
-  };
+  const projectItems = projects.map((p) => ({ value: String(p.id), label: p.project_name }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -99,34 +93,31 @@ export function InviteUserForm({ onSuccess, onCancel }: InviteUserFormProps) {
       </div>
       <div>
         <label className="block text-sm font-medium text-foreground">Role *</label>
-        <Select onValueChange={setRole} value={role}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="user">User</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
+        <Switcher
+          items={[
+            { value: 'user', label: 'User' },
+            { value: 'admin', label: 'Admin' },
+          ]}
+          value={role}
+          onChange={setRole}
+          placeholder="Select role..."
+          searchPlaceholder="Search role..."
+          emptyText="No roles found."
+          widthClassName="w-full"
+          allowClear={false}
+        />
       </div>
       <div>
         <label className="block text-sm font-medium text-foreground">Assign to Projects</label>
-        <div className="max-h-40 overflow-y-auto border border-border rounded-md p-2 space-y-2">
-          {projects.map(project => (
-            <div key={project.id} className="flex items-center">
-              <input
-                type="checkbox"
-                id={`project-${project.id}`}
-                checked={selectedProjects.includes(project.id)}
-                onChange={() => handleProjectSelection(project.id)}
-                className="h-4 w-4 text-primary border-border rounded focus:ring-ring"
-              />
-              <label htmlFor={`project-${project.id}`} className="ml-2 block text-sm text-foreground">
-                {project.project_name}
-              </label>
-            </div>
-          ))}
-        </div>
+        <MultiSwitcher
+          items={projectItems}
+          values={selectedProjects.map(String)}
+          onChange={(nextValues) => setSelectedProjects(nextValues.map((v) => Number(v)))}
+          placeholder="Select projects..."
+          searchPlaceholder="Search project..."
+          emptyText="No projects found."
+          widthClassName="w-full"
+        />
       </div>
       <DialogFooter className='pt-4'>
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>

@@ -1,0 +1,42 @@
+---
+title: API Reference
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Code } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">API Reference</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Integrate with Flame to build custom solutions.</p>
+  <a href="/api-docs" target="_blank" rel="noopener noreferrer">
+    <Button className="mt-8">View API Documentation</Button>
+  </a>
+</div>
+
+Flame Sales & Expense Tracker exposes an HTTP API that powers the web application and can be used for integrations such as:
+
+- Synchronizing data with external systems (accounting, CRM, BI tools)
+- Automating data import/export
+- Building custom internal tools on top of Flame
+
+<Callout type="info" title="OpenAPI details">
+  The API documentation is available at the actual API documentation page.
+</Callout>
+
+<div className="mt-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center">
+        <Code className="h-6 w-6 mr-2" />
+        Access the API Documentation
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>To view the complete API documentation with interactive endpoints, visit the actual API documentation page:</p>
+      <a href="/api-docs" target="_blank" rel="noopener noreferrer">
+        <Button variant="link" className="px-0">View API Documentation →</Button>
+      </a>
+      <p className="text-sm text-muted-foreground mt-2">This page provides a complete interactive API explorer where you can view all endpoints, their parameters, request/response schemas, and even test the endpoints directly from the browser.</p>
+    </CardContent>
+  </Card>
+</div>

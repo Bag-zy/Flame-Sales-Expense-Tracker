@@ -99,8 +99,8 @@ export function BudgetVsActualChart() {
         }
         const query = params.toString();
         const url = query
-          ? `/api/reports/budget-vs-actual?${query}`
-          : '/api/reports/budget-vs-actual';
+          ? `/api/v1/reports/budget-vs-actual?${query}`
+          : '/api/v1/reports/budget-vs-actual';
         const response = await fetch(url);
         const result = await response.json();
         if (result.status === 'success') {
@@ -146,7 +146,7 @@ export function BudgetVsActualChart() {
 
   return (
     <>
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm">
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4 text-sm">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium tracking-tight">Total Budget</CardTitle>

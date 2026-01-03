@@ -27,7 +27,7 @@ function CustomersPageContent() {
   const loadData = async (search?: string) => {
     setLoading(true);
     try {
-      const url = new URL('/api/customers', window.location.origin);
+      const url = new URL('/api/v1/customers', window.location.origin);
       if (search && search.trim()) {
         url.searchParams.set('search', search.trim());
       }
@@ -54,7 +54,7 @@ function CustomersPageContent() {
     if (!confirm('Are you sure you want to delete this customer?')) return;
 
     try {
-      const response = await fetch(`/api/customers?id=${id}`, {
+      const response = await fetch(`/api/v1/customers?id=${id}`, {
         method: 'DELETE',
       });
       const data = await response.json();
@@ -76,7 +76,7 @@ function CustomersPageContent() {
   return (
     <AuthGuard>
       <div className="p-6 space-y-6 max-w-5xl mx-auto">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Customers</h1>
           <Button
             onClick={() => {
@@ -88,12 +88,12 @@ function CustomersPageContent() {
           </Button>
         </div>
 
-        <div className="flex flex-wrap gap-2 items-end mt-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end mt-2">
           <Input
             placeholder="Search customers by name, email, or phone"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-72"
+            className="w-full sm:w-72"
           />
           <Button type="button" onClick={handleSearch}>
             Search

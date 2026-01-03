@@ -1,0 +1,95 @@
+---
+title: Getting Started
+---
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { LogIn, Building, Settings, UserPlus, ShoppingCart, BarChart2, ArrowRight, CheckCircle } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Getting Started</h1>
+  <p className="text-xl mt-4 text-muted-foreground">A step-by-step guide to setting up and using Flame Sales & Expense Tracker for the first time.</p>
+</div>
+
+<Callout type="info" title="Goal of this guide">
+  This guide walks you through the basics of setting up and using <strong>Flame Sales & Expense Tracker</strong> for the first time.
+</Callout>
+
+<Separator className="my-8" />
+
+<div className="space-y-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><LogIn className="h-6 w-6 mr-2" />1. Sign In and Initial Setup</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Open the application in your browser.</li>
+        <li>Create an account or sign in with your existing credentials.</li>
+        <li>Complete any initial onboarding or setup flow.</li>
+      </ol>
+      <p className="text-sm text-muted-foreground mt-2">If your workspace uses invitations, follow the invitation link to join an existing organization.</p>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Building className="h-6 w-6 mr-2" />2. Create or Join an Organization</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Organizations let you separate data between different companies or business units. Go to the <b>Organizations</b> section to create a new one or select an existing one.</p>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Settings className="h-6 w-6 mr-2" />3. Configure Basic Settings</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Visit the <b>Settings</b> area to configure defaults like currencies, locale, and invoice preferences to ensure consistency.</p>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><UserPlus className="h-6 w-6 mr-2" />4. Add Your Key Entities</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Preconfigure customers, vendors, products, and categories to make data entry faster and reports more meaningful.</p>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><ShoppingCart className="h-6 w-6 mr-2" />5. Start Recording Data</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Once the basics are configured, you can start using the core modules for sales, expenses, invoices, and receipts.</p>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />6. Explore Reports</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>The <b>Reports</b> section gives you summaries and analytics to monitor performance and make informed decisions.</p>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle>Next Steps</CardTitle>
+    <div className="text-sm text-muted-foreground">
+      <p>Once you are comfortable with the basics, use these sections to go deeper.</p>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <a href="/docs/features" className="block p-4 border rounded-lg hover:bg-muted">Core Features <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+      <a href="/docs/api" className="block p-4 border rounded-lg hover:bg-muted">API Reference <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    </div>
+  </CardContent>
+</Card>

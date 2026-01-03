@@ -93,7 +93,7 @@ function PaymentMethodsPageContent() {
   return (
     <AuthGuard>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Payment Methods</h1>
           <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />

@@ -8,6 +8,7 @@ import { AuthGuard } from '@/components/auth-guard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ interface ReportSummary {
 
 function CyclesPageContent() {
   const { selectedProject, projects, refreshCycles, currentCurrencyCode, setSelectedCycle } = useFilter();
+  const searchParams = useSearchParams();
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -67,9 +69,22 @@ function CyclesPageContent() {
     loadData();
   }, [selectedProject]);
 
+  useEffect(() => {
+    if (searchParams?.get('new') !== '1') return;
+
+    if (!selectedProject) {
+      toast.error('Please select a project from the main navigation first.');
+      return;
+    }
+
+    setEditingCycle(null);
+    setShowForm(true);
+  }, [searchParams, selectedProject]);
+
   const loadData = async () => {
     try {
-      const cyclesRes = await fetch('/api/cycles');
+      const cyclesRes = await fetch('/api/v1/cycles');
+
       const cyclesData = await cyclesRes.json();
 
       if (cyclesData.status === 'success') {
@@ -82,8 +97,8 @@ function CyclesPageContent() {
       }
       const summaryQuery = summaryParams.toString();
       const summaryUrl = summaryQuery
-        ? `/api/reports/summary?${summaryQuery}`
-        : '/api/reports/summary';
+        ? `/api/v1/reports/summary?${summaryQuery}`
+        : '/api/v1/reports/summary';
 
       const summaryRes = await fetch(summaryUrl);
       const summaryData = await summaryRes.json();
@@ -115,7 +130,7 @@ function CyclesPageContent() {
     };
 
     try {
-      const response = await fetch('/api/cycles', {
+      const response = await fetch('/api/v1/cycles', {
         method: editingCycle ? 'PUT' : 'POST',
         headers: { 
           'Content-Type': 'application/json'
@@ -164,7 +179,7 @@ function CyclesPageContent() {
     if (!confirm('Are you sure you want to delete this cycle?')) return;
 
     try {
-      const response = await fetch(`/api/cycles?id=${id}`, {
+      const response = await fetch(`/api/v1/cycles?id=${id}`, {
         method: 'DELETE'
       });
 
@@ -241,12 +256,9 @@ function CyclesPageContent() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-3xl font-bold">Cycles</h1>
-      </div>
-
-      <div className="flex justify-end">
         <Button
           onClick={() => {
             if (!selectedProject) {
@@ -261,14 +273,15 @@ function CyclesPageContent() {
         </Button>
       </div>
 
+      <div className="overflow-y-auto space-y-6 pr-2">
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Active Cycles</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold text-green-600 sm:text-2xl">
                 {activeCyclesCount.toLocaleString()}
               </div>
               <CardDescription className="text-xs mt-1">Currently ongoing</CardDescription>
@@ -276,11 +289,11 @@ function CyclesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Ended Cycles</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-muted-foreground">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold text-muted-foreground sm:text-2xl">
                 {endedCyclesCount.toLocaleString()}
               </div>
               <CardDescription className="text-xs mt-1">Cycles with end date in the past</CardDescription>
@@ -288,11 +301,11 @@ function CyclesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-xl font-bold sm:text-2xl">
                 {currencyLabel
                   ? `${currencyLabel} ${Number(totalBudgetAllotment ?? 0).toLocaleString()}`
                   : Number(totalBudgetAllotment ?? 0).toLocaleString()}
@@ -301,12 +314,12 @@ function CyclesPageContent() {
           </Card>
 
           <Card>
-            <CardHeader className="space-y-1 pb-2">
+            <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
               <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
               <CardDescription className="text-xs">Budget - Expenses</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className={`text-xl font-bold sm:text-2xl ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {currencyLabel
                   ? `${currencyLabel} ${Number(remainingBudget ?? 0).toLocaleString()}`
                   : Number(remainingBudget ?? 0).toLocaleString()}
@@ -332,7 +345,7 @@ function CyclesPageContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Cycle Number *</label>
+                <label className="block text-sm font-medium text-foreground">Cycle Number *</label>
                 <Select
                   value={formData.cycle_number}
                   onValueChange={(value) => setFormData({ ...formData, cycle_number: value })}
@@ -357,7 +370,7 @@ function CyclesPageContent() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Start Date</label>
+                <label className="block text-sm font-medium text-foreground">Start Date</label>
                 <input
                   type="date"
                   value={formData.start_date}
@@ -366,7 +379,7 @@ function CyclesPageContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">End Date</label>
+                <label className="block text-sm font-medium text-foreground">End Date</label>
                 <input
                   type="date"
                   value={formData.end_date}
@@ -375,7 +388,7 @@ function CyclesPageContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-foreground">
                   {currentCurrencyCode
                     ? `Budget Allotment (${currentCurrencyCode})`
                     : 'Budget Allotment'}
@@ -417,6 +430,8 @@ function CyclesPageContent() {
           </form>
         </DialogContent>
       </Dialog>
+
+      </div>
 
       <div className="space-y-4">
         {filteredCycles.length > 0 ? (

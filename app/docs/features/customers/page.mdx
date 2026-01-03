@@ -1,0 +1,117 @@
+---
+title: Customers
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Users, UserPlus, Edit, ShoppingCart, BarChart2, FileText, Heart, MessageSquare } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Customers</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Manage customer information to track sales, create invoices, and maintain relationships.</p>
+</div>
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Users className="h-6 w-6 mr-2" />What are Customers?</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Customers represent the entities that buy from your business. This feature allows you to:</p>
+    <ul className="list-disc pl-5 mt-4 space-y-2">
+      <li>Store customer contact information</li>
+      <li>Track purchase history</li>
+      <li>Manage customer-specific pricing or terms</li>
+      <li>Generate customer-specific reports and invoices</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><UserPlus className="h-6 w-6 mr-2" />Creating a Customer</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Navigate to the Customers section in your application.</li>
+        <li>Click the "Create Customer" button.</li>
+        <li>Enter the customer details (name, contact info, etc.).</li>
+        <li>Click "Save" to create the customer record.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Edit className="h-6 w-6 mr-2" />Managing Customer Information</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>You can update customer information at any time:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Edit contact details</li>
+        <li>Update customer preferences</li>
+        <li>Add notes about special requirements</li>
+        <li>Track communication history</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><ShoppingCart className="h-6 w-6 mr-2" />Using Customers in Sales</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>When creating sales records, you can associate them with specific customers:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li>Select from existing customers</li>
+      <li>Link sales to customer accounts</li>
+      <li>Track customer purchase history</li>
+      <li>Generate customer-specific reports</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Customer Benefits
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div className="flex items-start space-x-4">
+    <BarChart2 className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Sales Tracking</h3>
+      <p className="text-sm text-muted-foreground">Understand which customers buy most from you.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <FileText className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Invoicing</h3>
+      <p className="text-sm text-muted-foreground">Create invoices with pre-filled customer information.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <Heart className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Relationship Management</h3>
+      <p className="text-sm text-muted-foreground">Maintain important customer details.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <BarChart2 className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Reporting</h3>
+      <p className="text-sm text-muted-foreground">Analyze customer-specific revenue and trends.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <MessageSquare className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Communication</h3>
+      <p className="text-sm text-muted-foreground">Keep track of customer interactions and preferences.</p>
+    </div>
+  </div>
+</div>

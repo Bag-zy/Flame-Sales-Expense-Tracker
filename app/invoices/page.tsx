@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AuthGuard } from '@/components/auth-guard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import { useFilter } from '@/lib/context/filter-context';
 import { Customer } from '@/components/forms/customer-form';
 import {
@@ -30,7 +32,8 @@ interface Invoice {
 }
 
 function InvoicesPageContent() {
-  const { selectedProject, selectedCycle, projects, cycles, setSelectedProject, setSelectedCycle, selectedOrganization, organizations } = useFilter();
+  const { selectedProject, selectedCycle, selectedOrganization, organizations } = useFilter();
+  const searchParams = useSearchParams();
   const currentOrg = organizations.find((org) => org.id.toString() === selectedOrganization);
   const orgCurrencyCode = currentOrg?.currency_code || 'USD';
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -47,9 +50,20 @@ function InvoicesPageContent() {
     loadInvoices();
   }, [selectedProject, selectedCycle, selectedCustomerId]);
 
+  useEffect(() => {
+    const open = searchParams.get('open');
+    if (open === 'invoice') {
+      if (!selectedProject || !selectedCycle) {
+        toast.error('Please select a project and a cycle from the main navigation first.');
+      } else {
+        setShowCreateDialog(true);
+      }
+    }
+  }, [searchParams, selectedProject, selectedCycle]);
+
   const loadCustomers = async () => {
     try {
-      const response = await fetch('/api/customers');
+      const response = await fetch('/api/v1/customers');
       const data = await response.json();
       if (data.status === 'success') {
         setCustomers(data.customers || []);
@@ -61,7 +75,7 @@ function InvoicesPageContent() {
   const loadInvoices = async () => {
     setLoading(true);
     try {
-      const url = new URL('/api/invoices', window.location.origin);
+      const url = new URL('/api/v1/invoices', window.location.origin);
       if (selectedProject) url.searchParams.set('project_id', selectedProject);
       if (selectedCycle) url.searchParams.set('cycle_id', selectedCycle);
       if (selectedCustomerId) url.searchParams.set('customer_id', selectedCustomerId);
@@ -101,45 +115,23 @@ function InvoicesPageContent() {
   return (
     <AuthGuard>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Invoices</h1>
-          <Button type="button" onClick={() => setShowCreateDialog(true)}>
+          <Button
+            type="button"
+            onClick={() => {
+              if (!selectedProject || !selectedCycle) {
+                toast.error('Please select a project and a cycle from the main navigation first.');
+              } else {
+                setShowCreateDialog(true);
+              }
+            }}
+          >
             Create Invoice
           </Button>
         </div>
 
         <div className="flex flex-wrap gap-4 items-end mt-2">
-          <div>
-            <label className="block text-sm font-medium text-foreground">Project</label>
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="mt-1 w-48 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-            >
-              <option value="">All projects</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id.toString()}>
-                  {project.project_name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground">Cycle</label>
-            <select
-              value={selectedCycle}
-              onChange={(e) => setSelectedCycle(e.target.value)}
-              className="mt-1 w-48 px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-              disabled={!selectedProject}
-            >
-              <option value="">All cycles</option>
-              {cycles.map((cycle) => (
-                <option key={cycle.id} value={cycle.id.toString()}>
-                  {cycle.cycle_name}
-                </option>
-              ))}
-            </select>
-          </div>
           <div>
             <label className="block text-sm font-medium text-foreground">Customer</label>
             <select

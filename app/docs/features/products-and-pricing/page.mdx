@@ -1,0 +1,122 @@
+---
+title: Products and Pricing
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Package, Tag, Layers, Warehouse, ShoppingCart, Edit, CheckCircle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Products and Pricing</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Define what you sell and how it's priced for consistent sales, invoices, and reports.</p>
+</div>
+
+<Callout type="info" title="What this covers">
+  Use this page to learn how to define the products or services you sell and how pricing information flows into sales, invoices, and reports.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle className="flex items-center"><Package className="h-6 w-6 mr-2" />Defining Products</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>When creating a product, you'll capture:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li><b>Product Name</b>, <b>SKU</b>, and <b>Description</b>.</li>
+      <li><b>Reorder Level</b> to trigger restock alerts.</li>
+    </ul>
+    <Callout type="warning" title="Project Association" className="mt-4">
+      Products must be associated with a project. You must select a project before creating a product.
+    </Callout>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Layers className="h-6 w-6 mr-2" />Product Variants</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Products support multiple variants with different attributes, pricing, and inventory levels. Each variant includes:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Variant Name and Attributes (size, color, etc.).</li>
+        <li>Unit Cost and Selling Price.</li>
+        <li>Quantity in Stock.</li>
+        <li>Up to 10 images per variant.</li>
+      </ul>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Warehouse className="h-6 w-6 mr-2" />Inventory Management</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>The product system includes inventory tracking features:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Each variant tracks its own quantity in stock.</li>
+        <li>Set reorder levels to get alerts when inventory is low.</li>
+        <li>Stock levels are automatically updated when you sell products.</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><ShoppingCart className="h-6 w-6 mr-2" />Using Products in Sales</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Selecting products in sales provides:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Faster data entry with consistent pricing.</li>
+                <li>Better inventory tracking.</li>
+                <li>Detailed reporting by product and variant.</li>
+            </ul>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Edit className="h-6 w-6 mr-2" />Updating Products Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Products and their variants can be updated as needed:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Adjust prices and inventory quantities.</li>
+                <li>Modify product descriptions or attributes.</li>
+                <li>Add new variants to existing products.</li>
+            </ul>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+    <CardHeader>
+        <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+    </CardHeader>
+    <CardContent>
+        <ul className="list-disc pl-5 space-y-2">
+            <li>Start with a small, clean product list.</li>
+            <li>Use descriptive names for variants.</li>
+            <li>Set appropriate reorder levels.</li>
+            <li>Use images to distinguish between variants.</li>
+            <li>Avoid deleting products that appear in sales or invoices.</li>
+        </ul>
+    </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/features/sales" className="block p-4 border rounded-lg hover:bg-muted">Sales <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/invoices" className="block p-4 border rounded-lg hover:bg-muted">Invoices <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/reports" className="block p-4 border rounded-lg hover:bg-muted">Reports <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

@@ -43,7 +43,7 @@ export function CycleForm({ projectId, onSuccess, onCancel }: CycleFormProps) {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/cycles', {
+      const response = await fetch('/api/v1/cycles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

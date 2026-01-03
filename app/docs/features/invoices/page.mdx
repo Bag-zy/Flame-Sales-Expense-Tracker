@@ -1,0 +1,107 @@
+---
+title: Invoices
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { FileText, PlusCircle, Send, Check, Clock, BarChart2, CheckCircle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Invoices</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Generate, send, and track professional customer invoices.</p>
+</div>
+
+<Callout type="info" title="Invoices vs sales">
+  Sales capture the fact that revenue exists. Invoices turn sales into formal documents you send to customers.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle className="flex items-center"><FileText className="h-6 w-6 mr-2" />Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>The Invoices module lets you generate, send, and track customer invoices. Each invoice usually contains:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li>Customer details (name, address, tax information).</li>
+      <li>A list of products or services.</li>
+      <li>Amounts, discounts, and tax.</li>
+      <li>Payment terms and due date.</li>
+      <li>Status (e.g. draft, sent, paid, overdue).</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><PlusCircle className="h-6 w-6 mr-2" />Creating an Invoice</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>You can create invoices from a sale or manually. Typical steps:</p>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Open the <b>Invoices</b> area.</li>
+        <li>Create a new invoice.</li>
+        <li>Select the customer.</li>
+        <li>Add line items and adjust amounts.</li>
+        <li>Set payment terms and due date.</li>
+        <li>Save and send the invoice.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Clock className="h-6 w-6 mr-2" />Tracking Status</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Statuses help you monitor cash flow:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li><b>Draft</b> – being prepared.</li>
+        <li><b>Sent / Issued</b> – the customer has received it.</li>
+        <li><b>Paid</b> – payment completed.</li>
+        <li><b>Overdue</b> – due date passed without full payment.</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />Reporting on Invoices</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Invoices feed into:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Accounts receivable.</li>
+                <li>Aging reports.</li>
+                <li>Revenue recognition.</li>
+            </ul>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <ul className="list-disc pl-5 space-y-2">
+                <li>Align invoice numbering with your accounting system.</li>
+                <li>Keep payment terms consistent.</li>
+                <li>Regularly review and follow up on overdue invoices.</li>
+            </ul>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/features/sales" className="block p-4 border rounded-lg hover:bg-muted">Sales <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/customers-and-vendors" className="block p-4 border rounded-lg hover:bg-muted">Customers and vendors <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/reports" className="block p-4 border rounded-lg hover:bg-muted">Reports <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

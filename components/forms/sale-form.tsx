@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, useMemo, FormEvent, ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,15 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { CustomerForm, Customer as CustomerType } from '@/components/forms/customer-form';
 import { useFilter } from '@/lib/context/filter-context';
+import { Switcher } from '@/components/ui/shadcn-io/navbar-12/Switcher';
 
 interface Sale {
   id: number;
@@ -92,13 +86,12 @@ export function SaleForm({ editingSale, selectedProject, selectedCycle, projects
     const [formData, setFormData] = useState(() => createEmptySaleFormData(selectedProject));
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [availableVariants, setAvailableVariants] = useState<Product[]>([]);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [originalStock, setOriginalStock] = useState(0);
     const [customers, setCustomers] = useState<CustomerType[]>([]);
     const [customerSearch, setCustomerSearch] = useState('');
-    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [showCustomerDialog, setShowCustomerDialog] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(false);
 
     const { currentCurrencyCode } = useFilter();
 
@@ -109,7 +102,7 @@ export function SaleForm({ editingSale, selectedProject, selectedCycle, projects
 
     const loadCustomers = async (search?: string) => {
         try {
-            const url = new URL('/api/customers', window.location.origin);
+            const url = new URL('/api/v1/customers', window.location.origin);
             if (search && search.trim()) {
                 url.searchParams.set('search', search.trim());
             }
@@ -242,7 +235,7 @@ export function SaleForm({ editingSale, selectedProject, selectedCycle, projects
           setIsSubmitting(true);
 
           const token = localStorage.getItem('mcp_token');
-          const response = await fetch('/api/sales', {
+          const response = await fetch('/api/v1/sales', {
             method: editingSale ? 'PUT' : 'POST',
             headers: { 
               'Content-Type': 'application/json',
@@ -323,20 +316,6 @@ export function SaleForm({ editingSale, selectedProject, selectedCycle, projects
         return cycle?.cycle_name || 'Unknown Cycle';
     };
 
-    const handleCustomerInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setFormData(prev => ({ ...prev, customer: value }));
-        setCustomerSearch(value);
-        setShowCustomerDropdown(true);
-        await loadCustomers(value);
-    };
-
-    const handleSelectCustomer = (customer: CustomerType) => {
-        setFormData(prev => ({ ...prev, customer: customer.name }));
-        setCustomerSearch(customer.name);
-        setShowCustomerDropdown(false);
-    };
-
     const unitPriceForAmount = parseFloat(formData.price) || 0;
     const quantity = parseInt(formData.quantity) || 0;
     const totalAmount = unitPriceForAmount * quantity;
@@ -354,97 +333,87 @@ export function SaleForm({ editingSale, selectedProject, selectedCycle, projects
         ? products.find(p => p.product_id === parseInt(formData.product_id))?.product_name || ''
         : '');
 
+    const uniqueProducts = products.filter(
+      (p, index, self) => self.findIndex(sp => sp.product_name === p.product_name) === index,
+    );
+
+    const productItems = uniqueProducts.map((p) => ({ value: p.product_name, label: p.product_name }));
+
+    const variantItems = availableVariants.map((variant) => ({
+      value: variant.id.toString(),
+      label: variant.label
+        ? `${variant.label}${variant.unit_of_measurement ? ` (${variant.unit_of_measurement})` : ''}`
+        : 'Default variant',
+    }));
+
+    const customerItems = useMemo(() => {
+      const base = customers.map((c) => ({ value: c.name, label: c.name }));
+      const typed = (customerSearch || formData.customer || '').trim();
+      if (!typed) return base;
+      const exists = base.some((i) => i.value.toLowerCase() === typed.toLowerCase());
+      return exists ? base : [{ value: typed, label: typed }, ...base];
+    }, [customers, customerSearch, formData.customer]);
+
     return (
       <>
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-foreground">Product *</label>
-                <Select
+                <Switcher
+                  items={productItems}
                   value={selectedProductName}
-                  onValueChange={(value) => {
+                  onChange={(value) => {
                     if (!isInitialLoad) {
                       handleProductChange(value);
                     }
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products
-                      .filter((p, index, self) =>
-                        self.findIndex(sp => sp.product_name === p.product_name) === index
-                      )
-                      .map((product) => (
-                        <SelectItem key={product.product_name} value={product.product_name}>
-                          {product.product_name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select product"
+                  searchPlaceholder="Search product..."
+                  emptyText="No products found."
+                  widthClassName="w-full"
+                  allowClear={false}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground">Product Variant *</label>
-                <Select
+                <Switcher
+                  items={variantItems}
                   value={formData.variant_id}
-                  onValueChange={(value) => handleVariantChange(value)}
+                  onChange={(value) => handleVariantChange(value)}
                   disabled={availableVariants.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select variant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableVariants.map((variant) => (
-                      <SelectItem key={variant.id.toString()} value={variant.id.toString()}>
-                        {variant.label
-                          ? `${variant.label}${variant.unit_of_measurement ? ` (${variant.unit_of_measurement})` : ''}`
-                          : 'Default variant'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select variant"
+                  searchPlaceholder="Search variant..."
+                  emptyText="No variants found."
+                  widthClassName="w-full"
+                  allowClear={false}
+                />
               </div>
 
               {showFullForm && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-foreground">Customer</label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          placeholder="Search or enter customer name"
-                          value={customerSearch}
-                          onChange={handleCustomerInputChange}
-                          onFocus={() => setShowCustomerDropdown(true)}
-                          required
-                        />
-                        {showCustomerDropdown && customers.length > 0 && (
-                          <div className="absolute z-20 mt-1 w-full bg-popover border border-border rounded-md shadow max-h-40 overflow-y-auto">
-                            {customers.map((customer) => (
-                              <button
-                                key={customer.id}
-                                type="button"
-                                onClick={() => handleSelectCustomer(customer)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                              >
-                                <div className="font-medium">{customer.name}</div>
-                                {customer.email && (
-                                  <div className="text-xs text-muted-foreground">{customer.email}</div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowCustomerDialog(true)}
-                      >
-                        + New
-                      </Button>
-                    </div>
+                    <Switcher
+                      items={customerItems}
+                      value={formData.customer}
+                      onChange={(value) => {
+                        setFormData((prev) => ({ ...prev, customer: value }));
+                        setCustomerSearch(value);
+                      }}
+                      placeholder="Search or enter customer name"
+                      searchPlaceholder="Search customer..."
+                      onSearchChange={(query) => {
+                        setCustomerSearch(query);
+                        setFormData((prev) => ({ ...prev, customer: query }));
+                        void loadCustomers(query);
+                      }}
+                      emptyText="No customers found."
+                      widthClassName="w-full"
+                      actionLabel="+ New customer"
+                      onAction={() => setShowCustomerDialog(true)}
+                      allowClear={false}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground">Quantity in Stock</label>
@@ -525,21 +494,19 @@ export function SaleForm({ editingSale, selectedProject, selectedCycle, projects
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground">Status *</label>
-                    <Select
+                    <Switcher
+                      items={statusOptions.map((option) => ({ value: option.value, label: option.label }))}
                       value={autoStatus}
+                      onChange={() => {
+                        // status is auto-derived from remaining balance
+                      }}
                       disabled
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select status"
+                      searchPlaceholder="Search status..."
+                      emptyText="No statuses found."
+                      widthClassName="w-full"
+                      allowClear={false}
+                    />
                     {formData.product_id && formData.quantity && (
                       <p className="text-xs text-muted-foreground mt-1">
                         ⚠️ Stock will be automatically reduced by {formData.quantity} units when saved

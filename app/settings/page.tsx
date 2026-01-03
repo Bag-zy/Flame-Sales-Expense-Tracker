@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AuthGuard } from '@/components/auth-guard';
-import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import UsersPage from '@/app/users/page';
 import TeamsPage from '@/app/teams/page';
 import OrganizationsPage from '@/app/organizations/page';
@@ -11,6 +12,7 @@ import ProjectsPage from '@/app/projects/page';
 import CategoriesPage from '@/app/categories/page';
 import VendorsPage from '@/app/vendors/page';
 import PaymentMethodsPage from '@/app/payment-methods/page';
+import DevelopersPage from '@/app/developers/page';
 
 type SettingsSection =
   | 'profile'
@@ -19,59 +21,80 @@ type SettingsSection =
   | 'projects'
   | 'categories'
   | 'vendors'
-  | 'paymentMethods';
+  | 'paymentMethods'
+  | 'developers';
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const [section, setSection] = useState<SettingsSection>('profile');
+
+  useEffect(() => {
+    const sectionParam = searchParams.get('section') as SettingsSection | null;
+    if (sectionParam) {
+      setSection(sectionParam);
+    }
+  }, [searchParams]);
 
   return (
     <AuthGuard>
-      <div className="flex flex-col md:flex-row gap-6 p-6 max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-6 p-6 w-full">
         {/* Navigation column */}
-        <aside className="w-full md:w-64 space-y-2 border border-border rounded-lg bg-card p-4">
+        <aside className="w-full md:w-64 space-y-2 border border-border rounded-lg bg-card p-4 sticky top-0 self-start">
           <h2 className="text-sm font-semibold text-foreground mb-2">Navigation</h2>
-          <Button
-            variant={section === 'organizations' ? 'default' : 'outline'}
-            className="w-full justify-start"
-            onClick={() => setSection('organizations')}
+          <RadioGroup
+            value={section}
+            onValueChange={(value) => setSection(value as SettingsSection)}
+            className="flex flex-wrap gap-2 md:flex-col"
           >
-            Organizations
-          </Button>
-          <Button
-            variant={section === 'projects' ? 'default' : 'outline'}
-            className="w-full justify-start"
-            onClick={() => setSection('projects')}
-          >
-            Projects
-          </Button>
-          <Button
-            variant={section === 'categories' ? 'default' : 'outline'}
-            className="w-full justify-start"
-            onClick={() => setSection('categories')}
-          >
-            Categories
-          </Button>
-          <Button
-            variant={section === 'vendors' ? 'default' : 'outline'}
-            className="w-full justify-start"
-            onClick={() => setSection('vendors')}
-          >
-            Vendors
-          </Button>
-          <Button
-            variant={section === 'paymentMethods' ? 'default' : 'outline'}
-            className="w-full justify-start"
-            onClick={() => setSection('paymentMethods')}
-          >
-            Payment Methods
-          </Button>
-          <Button
-            variant={section === 'profile' ? 'default' : 'outline'}
-            className="w-full justify-start"
-            onClick={() => setSection('profile')}
-          >
-            User Profile
-          </Button>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="organizations" id="settings-organizations" />
+              <Label htmlFor="settings-organizations" className="text-sm">
+                Organizations
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="projects" id="settings-projects" />
+              <Label htmlFor="settings-projects" className="text-sm">
+                Projects
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="categories" id="settings-categories" />
+              <Label htmlFor="settings-categories" className="text-sm">
+                Categories
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="vendors" id="settings-vendors" />
+              <Label htmlFor="settings-vendors" className="text-sm">
+                Vendors
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="paymentMethods" id="settings-payment-methods" />
+              <Label htmlFor="settings-payment-methods" className="text-sm">
+                Payment Methods
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="developers" id="settings-developers" />
+              <Label htmlFor="settings-developers" className="text-sm">
+                Developers / API Keys
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="teams" id="settings-teams" />
+              <Label htmlFor="settings-teams" className="text-sm">
+                Teams
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="profile" id="settings-profile" />
+              <Label htmlFor="settings-profile" className="text-sm">
+                User Profile
+              </Label>
+            </div>
+          </RadioGroup>
         </aside>
 
         {/* Content area */}
@@ -115,6 +138,12 @@ export default function SettingsPage() {
           {section === 'paymentMethods' && (
             <div className="space-y-4">
               <PaymentMethodsPage />
+            </div>
+          )}
+
+          {section === 'developers' && (
+            <div className="space-y-4">
+              <DevelopersPage />
             </div>
           )}
         </section>

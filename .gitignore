@@ -4,6 +4,21 @@ node_modules/
 # Next.js build output
 .next/
 out/
+output/
+
+.open-next/
+.wrangler/
+tsconfig.tsbuildinfo
+
+android/app/build/
+android/.gradle/
+android/.idea/
+android/capacitor-cordova-android-plugins/build/
+ios/build/
+ios/Pods/
+
+public/sw.js
+public/workbox-*.js
 
 # Env files
 .env*

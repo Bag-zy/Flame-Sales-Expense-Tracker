@@ -1,19 +1,9 @@
-import { Pool } from 'pg';
+import { db } from './database';
 
 export async function seedVariantTypes() {
-  let pool: Pool | null = null;
-  
   try {
-    pool = new Pool({
-      host: process.env.PG_HOST,
-      database: process.env.PG_DATABASE,
-      user: process.env.PG_USER,
-      password: process.env.PG_PASSWORD,
-      port: parseInt(process.env.PG_PORT || '5432')
-    });
-
     // Check if variant types already exist to avoid duplicates
-    const checkResult = await pool.query('SELECT COUNT(*) FROM variant_types');
+    const checkResult = await db.query('SELECT COUNT(*) FROM variant_types');
     const count = parseInt(checkResult.rows[0].count);
 
     if (count > 0) {
@@ -36,7 +26,7 @@ export async function seedVariantTypes() {
     ];
 
     for (const variantType of variantTypes) {
-      await pool.query(
+      await db.query(
         'INSERT INTO variant_types (id, type_name) VALUES ($1, $2)',
         [variantType.id, variantType.type_name]
       );
@@ -132,7 +122,7 @@ export async function seedVariantTypes() {
     ];
 
     for (const unit of unitsOfMeasurement) {
-      await pool.query(
+      await db.query(
         'INSERT INTO units_of_measurement (variant_type_id, unit_name) VALUES ($1, $2)',
         [unit.variant_type_id, unit.unit_name]
       );
@@ -142,8 +132,6 @@ export async function seedVariantTypes() {
   } catch (error) {
     console.error('Error seeding variant types and units of measurement:', error);
     throw error;
- } finally {
-    if (pool) await pool.end();
   }
 }
 

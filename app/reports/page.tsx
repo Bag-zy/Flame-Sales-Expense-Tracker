@@ -10,7 +10,8 @@ import { PnlByProjectChart } from '@/components/charts/pnl-by-project-chart';
 import { SalesBreakdownChart } from '@/components/charts/sales-breakdown-chart';
 import { BudgetVsActualChart } from '@/components/charts/budget-vs-actual-chart';
 import { ExpensesByCategoryChart } from '@/components/expenses-by-category-chart';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useFilter } from '@/lib/context/filter-context';
 
 interface ReportSummary {
@@ -25,10 +26,13 @@ interface ReportSummary {
   totalBudgetAllotment: number;
 }
 
+type ReportView = 'overview' | 'pnl' | 'expenses' | 'sales' | 'budget';
+
 function ReportsPageContent() {
   const { selectedOrganization, selectedProject, selectedCycle, projects, cycles, currentCurrencyCode } = useFilter();
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [reportLoading, setReportLoading] = useState(true);
+  const [activeView, setActiveView] = useState<ReportView>('overview');
 
   useEffect(() => {
     loadReportSummary();
@@ -48,7 +52,7 @@ function ReportsPageContent() {
         params.append('cycleId', selectedCycle);
       }
 
-      const response = await fetch(`/api/reports/summary?${params.toString()}`);
+      const response = await fetch(`/api/v1/reports/summary?${params.toString()}`);
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -84,134 +88,154 @@ function ReportsPageContent() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Reports</h1>
-        </div>
-
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-700">
+          <h2 className="text-xl font-semibold text-muted-foreground">
             {getReportTitle()}
           </h2>
         </div>
 
-        {reportLoading ? (
-          <div className="text-center p-8">Loading report...</div>
-        ) : summary ? (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-              <div className="md:col-span-1">
-                <TabsList className="flex md:flex-col h-auto items-stretch">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="pnl">P&amp;L by Project</TabsTrigger>
-                  <TabsTrigger value="expenses">Expenses by Category</TabsTrigger>
-                  <TabsTrigger value="sales">Sales Breakdown</TabsTrigger>
-                  <TabsTrigger value="budget">Budget vs Actual</TabsTrigger>
-                </TabsList>
-              </div>
-              <div className="md:col-span-4">
-                <TabsContent value="overview">
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-green-600">
-                            {currencyLabel
-                              ? `${currencyLabel} ${summary.totalRevenue.toLocaleString()}`
-                              : summary.totalRevenue.toLocaleString()}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-red-600">
-                            {currencyLabel
-                              ? `${currencyLabel} ${summary.totalExpenses.toLocaleString()}`
-                              : summary.totalExpenses.toLocaleString()}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <div className="space-y-1">
-                            <CardTitle className="text-sm font-medium">Net Profit / Loss</CardTitle>
-                            <CardDescription className="text-xs">Revenue - Expenses</CardDescription>
-                          </div>
-                          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`text-2xl font-bold ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {currencyLabel
-                              ? `${currencyLabel} ${summary.netProfit.toLocaleString()}`
-                              : summary.netProfit.toLocaleString()}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold">
-                            {currencyLabel
-                              ? `${currencyLabel} ${summary.totalBudgetAllotment.toLocaleString()}`
-                              : summary.totalBudgetAllotment.toLocaleString()}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="space-y-1 pb-2">
-                          <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
-                          <CardDescription className="text-xs">Budget - Expenses</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className={`text-2xl font-bold ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {currencyLabel
-                              ? `${currencyLabel} ${remainingBudget.toLocaleString()}`
-                              : remainingBudget.toLocaleString()}
-                          </div>
-                        </CardContent>
-                      </Card>
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+          {reportLoading ? (
+            <div className="text-center p-8">Loading report...</div>
+          ) : summary ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <div className="md:col-span-1">
+                  <RadioGroup
+                    value={activeView}
+                    onValueChange={(value) => setActiveView(value as ReportView)}
+                    className="flex flex-wrap gap-2 md:flex-col md:items-start"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="overview" id="overview" />
+                      <Label htmlFor="overview" className="text-sm">
+                        Overview
+                      </Label>
                     </div>
-                    {summary.monthlyTrends && summary.monthlyTrends.length > 0 && (
-                      <TrendsChart data={summary.monthlyTrends} />
-                    )}
-                  </div>
-                </TabsContent>
-                <TabsContent value="pnl">
-                  <PnlByProjectChart />
-                </TabsContent>
-                <TabsContent value="expenses">
-                  <ExpensesByCategoryChart />
-                </TabsContent>
-                <TabsContent value="sales">
-                  <SalesBreakdownChart />
-                </TabsContent>
-                <TabsContent value="budget">
-                  <BudgetVsActualChart />
-                </TabsContent>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="pnl" id="pnl" />
+                      <Label htmlFor="pnl" className="text-sm">
+                        P&amp;L by Project
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="expenses" id="expenses" />
+                      <Label htmlFor="expenses" className="text-sm">
+                        Expenses by Category
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="sales" id="sales" />
+                      <Label htmlFor="sales" className="text-sm">
+                        Sales Breakdown
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="budget" id="budget" />
+                      <Label htmlFor="budget" className="text-sm">
+                        Budget vs Actual
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div className="md:col-span-4">
+                  {activeView === 'overview' && (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-6">
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className="text-xl font-bold text-green-600 sm:text-2xl">
+                              {currencyLabel
+                                ? `${currencyLabel} ${summary.totalRevenue.toLocaleString()}`
+                                : summary.totalRevenue.toLocaleString()}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className="text-xl font-bold text-red-600 sm:text-2xl">
+                              {currencyLabel
+                                ? `${currencyLabel} ${summary.totalExpenses.toLocaleString()}`
+                                : summary.totalExpenses.toLocaleString()}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                            <div className="space-y-1">
+                              <CardTitle className="text-sm font-medium">Net Profit / Loss</CardTitle>
+                              <CardDescription className="text-xs">Revenue - Expenses</CardDescription>
+                            </div>
+                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className={`text-xl font-bold sm:text-2xl ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {currencyLabel
+                                ? `${currencyLabel} ${summary.netProfit.toLocaleString()}`
+                                : summary.netProfit.toLocaleString()}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className="text-xl font-bold sm:text-2xl">
+                              {currencyLabel
+                                ? `${currencyLabel} ${summary.totalBudgetAllotment.toLocaleString()}`
+                                : summary.totalBudgetAllotment.toLocaleString()}
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
+                            <CardDescription className="text-xs">Budget - Expenses</CardDescription>
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className={`text-xl font-bold sm:text-2xl ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {currencyLabel
+                                ? `${currencyLabel} ${remainingBudget.toLocaleString()}`
+                                : remainingBudget.toLocaleString()}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      {summary.monthlyTrends && summary.monthlyTrends.length > 0 && (
+                        <TrendsChart data={summary.monthlyTrends} />
+                      )}
+                    </div>
+                  )}
+                  {activeView === 'pnl' && <PnlByProjectChart />}
+                  {activeView === 'expenses' && <ExpensesByCategoryChart />}
+                  {activeView === 'sales' && <SalesBreakdownChart />}
+                  {activeView === 'budget' && <BudgetVsActualChart />}
+                </div>
               </div>
             </div>
-          </Tabs>
-        ) : (
-          <Card>
-            <CardContent className="p-8 text-center text-gray-500">
-              No summary data available for the selected scope.
-            </CardContent>
-          </Card>
-        )}
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                No summary data available for the selected scope.
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </AuthGuard>
   );

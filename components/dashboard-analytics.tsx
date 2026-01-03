@@ -48,7 +48,7 @@ export function DashboardAnalytics() {
   useEffect(() => {
     async function load() {
       try {
-        const expenseUrl = new URL('/api/expenses', window.location.origin)
+        const expenseUrl = new URL('/api/v1/expenses', window.location.origin)
         expenseUrl.searchParams.set('limit', '200')
         if (selectedProject) {
           expenseUrl.searchParams.set('project_id', selectedProject)
@@ -57,7 +57,7 @@ export function DashboardAnalytics() {
           expenseUrl.searchParams.set('cycle_id', selectedCycle)
         }
 
-        const salesUrl = new URL('/api/sales', window.location.origin)
+        const salesUrl = new URL('/api/v1/sales', window.location.origin)
         if (selectedProject) {
           salesUrl.searchParams.set('project_id', selectedProject)
         }
@@ -65,7 +65,7 @@ export function DashboardAnalytics() {
           salesUrl.searchParams.set('cycle_id', selectedCycle)
         }
 
-        const summaryUrl = new URL('/api/reports/summary', window.location.origin)
+        const summaryUrl = new URL('/api/v1/reports/summary', window.location.origin)
         if (selectedOrganization) {
           summaryUrl.searchParams.set('orgId', selectedOrganization)
         }

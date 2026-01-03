@@ -45,8 +45,8 @@ function OrganizationsPageContent() {
   const loadOrganizations = async () => {
     try {
       const [orgsRes, summaryRes] = await Promise.all([
-        fetch('/api/organizations'),
-        fetch('/api/reports/summary'),
+        fetch('/api/v1/organizations'),
+        fetch('/api/v1/reports/summary'),
       ]);
 
       const orgsData = await orgsRes.json();
@@ -90,8 +90,8 @@ function OrganizationsPageContent() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
           <h1 className="text-3xl font-bold">Organizations</h1>
           <Link href="/setup">
             <Button>
@@ -101,78 +101,47 @@ function OrganizationsPageContent() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Organizations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {totalOrganizations.toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Total Organizations</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold sm:text-2xl">
+                  {totalOrganizations.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {currencyLabel
-                  ? `${currencyLabel} ${Number(totalBudgetAllotment ?? 0).toLocaleString()}`
-                  : Number(totalBudgetAllotment ?? 0).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-bold sm:text-2xl">
+                  {currencyLabel
+                    ? `${currencyLabel} ${Number(totalBudgetAllotment ?? 0).toLocaleString()}`
+                    : Number(totalBudgetAllotment ?? 0).toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="space-y-1 pb-2">
-              <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
-              <CardDescription className="text-xs">Budget - Expenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${remainingSpend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {currencyLabel
-                  ? `${currencyLabel} ${Number(remainingSpend ?? 0).toLocaleString()}`
-                  : Number(remainingSpend ?? 0).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
+                <CardDescription className="text-xs">Budget - Expenses</CardDescription>
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className={`text-xl font-bold sm:text-2xl ${remainingSpend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {currencyLabel
+                    ? `${currencyLabel} ${Number(remainingSpend ?? 0).toLocaleString()}`
+                    : Number(remainingSpend ?? 0).toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Dialog
-          open={showForm}
-          onOpenChange={(open) => {
-            setShowForm(open);
-            if (!open) {
-              setEditingOrganization(null);
-            }
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingOrganization ? 'Edit Organization' : 'Edit Organization'}</DialogTitle>
-            </DialogHeader>
-            {editingOrganization && (
-              <OrganizationForm
-                editingOrganization={editingOrganization}
-                onSuccess={(organization) => {
-                  setShowForm(false);
-                  setEditingOrganization(null);
-                  loadOrganizations();
-                  refreshOrganizations();
-                }}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditingOrganization(null);
-                }}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-
-        <div className="max-h-[60vh] overflow-y-auto">
           {organizations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {organizations.map((org) => (
@@ -213,6 +182,37 @@ function OrganizationsPageContent() {
               No organizations found. Create your first organization to get started.
             </div>
           )}
+
+          <Dialog
+            open={showForm}
+            onOpenChange={(open) => {
+              setShowForm(open);
+              if (!open) {
+                setEditingOrganization(null);
+              }
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingOrganization ? 'Edit Organization' : 'Edit Organization'}</DialogTitle>
+              </DialogHeader>
+              {editingOrganization && (
+                <OrganizationForm
+                  editingOrganization={editingOrganization}
+                  onSuccess={(organization) => {
+                    setShowForm(false);
+                    setEditingOrganization(null);
+                    loadOrganizations();
+                    refreshOrganizations();
+                  }}
+                  onCancel={() => {
+                    setShowForm(false);
+                    setEditingOrganization(null);
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </AuthGuard>

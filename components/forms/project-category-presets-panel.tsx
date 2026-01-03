@@ -73,11 +73,10 @@ export function ProjectCategoryPresetsPanel({
                     {hasExtraInfo && (
                       <div className="group relative inline-flex">
                         <Info className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                        <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                           {preset.description && <span>{preset.description}</span>}
                           {preset.expense_presets && preset.expense_presets.length > 0 && (
                             <span>
-                              {preset.description && ' '}
                               Includes expense categories like:{' '}
                               {preset.expense_presets
                                 .slice(0, 3)

@@ -1,0 +1,136 @@
+---
+title: Overview
+---
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { FileText, BarChart2, Briefcase, ShoppingCart, Truck, FilePlus, Settings, Users, Building, Package, Tag, Landmark, FileStack, BookOpen, Code } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Flame Sales & Expense Tracker Documentation</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Your complete financial management solution.</p>
+  <Button className="mt-8">Get Started</Button>
+</div>
+
+<Card>
+  <CardHeader>
+    <CardTitle>Why use Flame?</CardTitle>
+    <div class="text-sm text-muted-foreground">
+      <p>Understand your finances at a glance, from day-to-day expenses to high-level profitability and make data-driven decisions for your business growth.</p>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="flex items-start space-x-4">
+        <FileText className="h-8 w-8 text-primary" />
+        <div>
+          <h3 className="font-semibold">Centralized Tracking</h3>
+          <p className="text-sm text-muted-foreground">Track expenses and sales in one centralized platform.</p>
+        </div>
+      </div>
+      <div className="flex items-start space-x-4">
+        <Users className="h-8 w-8 text-primary" />
+        <div>
+          <h3 className="font-semibold">Team Collaboration</h3>
+          <p className="text-sm text-muted-foreground">Collaborate with your team using role-based access.</p>
+        </div>
+      </div>
+      <div className="flex items-start space-x-4">
+        <Package className="h-8 w-8 text-primary" />
+        <div>
+          <h3 className="font-semibold">Inventory Management</h3>
+          <p className="text-sm text-muted-foreground">Manage inventory with detailed product variants and stock tracking.</p>
+        </div>
+      </div>
+      <div className="flex items-start space-x-4">
+        <Truck className="h-8 w-8 text-primary" />
+        <div>
+          <h3 className="font-semibold">Mileage Tracking</h3>
+          <p className="text-sm text-muted-foreground">Track mileage and business travel expenses.</p>
+        </div>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Core Capabilities
+
+<Tabs defaultValue="financial-management">
+  <TabsList className="!flex w-full flex-wrap gap-2 !h-auto md:flex-col md:items-start">
+    <TabsTrigger value="financial-management"><Landmark className="h-4 w-4 mr-2" />Financial Management</TabsTrigger>
+    <TabsTrigger value="organization"><Building className="h-4 w-4 mr-2" />Organization</TabsTrigger>
+    <TabsTrigger value="inventory"><Package className="h-4 w-4 mr-2" />Inventory</TabsTrigger>
+    <TabsTrigger value="sales"><ShoppingCart className="h-4 w-4 mr-2" />Sales</TabsTrigger>
+    <TabsTrigger value="expense"><FilePlus className="h-4 w-4 mr-2" />Expense</TabsTrigger>
+    <TabsTrigger value="invoicing"><FileText className="h-4 w-4 mr-2" />Invoicing</TabsTrigger>
+    <TabsTrigger value="reporting"><BarChart2 className="h-4 w-4 mr-2" />Reporting</TabsTrigger>
+  </TabsList>
+  <TabsContent value="financial-management">
+    <p>Flame provides comprehensive financial management tools that allow you to track both income and expenses in a single system. The platform supports multi-currency transactions and provides detailed reporting capabilities to help you understand your business's financial health at all levels - from day-to-day transactions to high-level profitability analysis.</p>
+  </TabsContent>
+  <TabsContent value="organization">
+    <p>The application is built around a hierarchical structure that mirrors real business operations. Organizations can contain multiple projects, each with their own categories, cycles, and teams. This structure enables detailed tracking while maintaining clear separation between different business activities.</p>
+  </TabsContent>
+  <TabsContent value="inventory">
+    <p>Flame includes sophisticated product management with support for variants, attributes, and inventory tracking. You can define products with multiple variants (such as different sizes, colors, or configurations) and track inventory levels with reorder alerts to prevent stockouts. The system supports detailed product attributes and allows for up to 10 images per product variant to help with identification and sales processes.</p>
+  </TabsContent>
+  <TabsContent value="sales">
+    <p>The sales module allows you to record income from your business activities, link sales to specific products and customers, and track sales performance over time. Sales records can be connected to specific projects, cycles, or customers to provide detailed revenue analysis and reporting capabilities.</p>
+  </TabsContent>
+  <TabsContent value="expense">
+    <p>Expense tracking is designed to handle all types of business expenses with detailed categorization options. You can attach receipts and documentation to expenses, assign them to specific projects or categories, and track spending patterns across your organization. The system also supports mileage tracking for business travel expenses with automatic distance calculation and categorization options.</p>
+  </TabsContent>
+  <TabsContent value="invoicing">
+    <p>Flame includes a complete invoicing system that allows you to generate professional invoices from your sales records. You can create invoices for single or multiple sales, include detailed line items, and track invoice status and payment history. The system supports custom invoice templates and provides tools for following up on outstanding payments.</p>
+  </TabsContent>
+  <TabsContent value="reporting">
+    <p>The reporting system provides comprehensive analytics tools that help you understand your business performance. You can generate reports showing revenue trends, expense breakdowns, profitability by project or product, and other key financial metrics. The system includes built-in analytics for expenses by category and other common business metrics, with the ability to customize reports based on your specific needs.</p>
+  </TabsContent>
+</Tabs>
+
+<Separator className="my-8" />
+
+## Who Should Use Flame?
+
+<Card>
+  <CardContent>
+    <p className="mt-4">Flame is designed for businesses of all sizes that need to track sales and expenses with professional-level detail. It's particularly valuable for businesses that operate multiple projects simultaneously, have inventory to manage, or need to track expenses across different departments or cost centers. The system is also ideal for businesses that need to generate invoices and reports for stakeholders, tax purposes, or financial planning. The multi-user and role-based access features make it suitable for businesses with multiple employees who need access to financial data while maintaining appropriate controls and visibility levels. Freelancers and small business owners will find the system comprehensive enough to support business growth, while larger organizations will appreciate the ability to organize financial data across multiple projects and teams while maintaining central oversight and reporting capabilities.</p>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Documentation structure
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>Getting Started</CardTitle>
+      <BookOpen className="h-8 w-8 text-primary" />
+    </CardHeader>
+    <CardContent>
+      <a href="/docs/getting-started">Learn the basics of Flame</a>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>Core Features</CardTitle>
+      <FileStack className="h-8 w-8 text-primary" />
+    </CardHeader>
+    <CardContent>
+      <a href="/docs/features">Explore the core features</a>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>API Reference</CardTitle>
+      <Code className="h-8 w-8 text-primary" />
+    </CardHeader>
+    <CardContent>
+      <a href="/docs/api">Integrate with our API</a>
+    </CardContent>
+  </Card>
+</div>

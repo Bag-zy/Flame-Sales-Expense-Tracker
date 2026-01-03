@@ -127,8 +127,8 @@ function ProductsPageContent() {
   const loadData = async () => {
     try {
       const [productsRes, projectCategoriesRes] = await Promise.all([
-        fetch('/api/products'),
-        fetch('/api/project-categories')
+        fetch('/api/v1/products'),
+        fetch('/api/v1/project-categories')
       ]);
       
       const productsData = await productsRes.json();
@@ -172,7 +172,7 @@ function ProductsPageContent() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const response = await fetch(`/api/products?id=${id}`, {
+      const response = await fetch(`/api/v1/products?id=${id}`, {
         method: 'DELETE'
       });
 
@@ -196,7 +196,7 @@ function ProductsPageContent() {
   return (
     <AuthGuard>
       <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center gap-3 justify-between">
         <h1 className="text-3xl font-bold">Products</h1>
         <Button
           color="primary"

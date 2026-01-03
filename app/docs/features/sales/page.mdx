@@ -1,0 +1,110 @@
+---
+title: Sales
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { ShoppingCart, PlusCircle, Clock, BarChart2, CheckCircle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Sales</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Track income and connect it to your products and customers.</p>
+</div>
+
+<Callout type="info" title="What the Sales module does">
+  The Sales module is where you track income – every record represents money coming into the business.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle className="flex items-center"><ShoppingCart className="h-6 w-6 mr-2" />Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Each sale typically includes:</p>
+    <ul className="list-disc pl-5 mt-2 space-y-1">
+      <li>The <b>customer</b> you sold to.</li>
+      <li>One or more <b>products or services</b>.</li>
+      <li>Monetary details such as amount, tax, and currency.</li>
+      <li>A <b>date</b> and <b>status</b> (e.g., draft, confirmed, paid).</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><PlusCircle className="h-6 w-6 mr-2" />Creating a Sale</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>A typical workflow:</p>
+      <ol className="list-decimal pl-5 mt-2 space-y-1">
+        <li>Navigate to the <b>Sales</b> area.</li>
+        <li>Create a new sale.</li>
+        <li>Choose the customer and add products.</li>
+        <li>Review amounts, tax, and currency.</li>
+        <li>Set the appropriate status.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Clock className="h-6 w-6 mr-2" />Status and Lifecycle</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Sales might move through statuses such as:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li><b>Draft</b> – being prepared.</li>
+        <li><b>Issued / Confirmed</b> – agreed with the customer.</li>
+        <li><b>Paid</b> – payment received.</li>
+        <li><b>Cancelled</b> – voided or reversed.</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Callout type="warning" title="Data quality" className="mt-8">
+  Make sure statuses reflect reality. Incorrect statuses will affect reports and make it harder to reconcile revenue.
+</Callout>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />Reporting on Sales</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Sales data powers several key reports:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>Revenue by period (day, month, quarter).</li>
+                <li>Revenue by product or product category.</li>
+                <li>Revenue by customer or project.</li>
+            </ul>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <ul className="list-disc pl-5 space-y-2">
+                <li>Use products instead of free-text descriptions.</li>
+                <li>Keep customer data clean and deduplicated.</li>
+                <li>Align sales statuses with your accounting process.</li>
+            </ul>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/features/products-and-pricing" className="block p-4 border rounded-lg hover:bg-muted">Products and pricing <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/customers-and-vendors" className="block p-4 border rounded-lg hover:bg-muted">Customers and vendors <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/invoices" className="block p-4 border rounded-lg hover:bg-muted">Invoices <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/reports" className="block p-4 border rounded-lg hover:bg-muted">Reports <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

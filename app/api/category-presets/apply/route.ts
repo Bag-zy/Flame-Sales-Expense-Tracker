@@ -1,19 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
-import { getSessionUser } from '@/lib/api-auth'
+import { getApiOrSessionUser } from '@/lib/api-auth-keys'
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * @swagger
+ * /api/category-presets/apply:
+ *   post:
+ *     operationId: applyCategoryPresets
+ *     tags:
+ *       - Category Presets
+ *     summary: Apply global project and expense category presets to an organization/project
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               projectCategoryPresetIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *               project_id:
+ *                 type: integer
+ *                 nullable: true
+ *             required:
+ *               - projectCategoryPresetIds
+ *     responses:
+ *       200:
+ *         description: Presets applied successfully.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         description: API key required.
+ */
 
 // POST /api/category-presets/apply
 // Body: { projectCategoryPresetIds: number[] }
 // Creates real project_categories and expense_category rows for the current organization
 export async function POST(request: NextRequest) {
-  const client = await db.connect()
-
   try {
-    const sessionUser = await getSessionUser(request)
-    if (!sessionUser?.organizationId || !sessionUser.id) {
-      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 })
+    const user = await getApiOrSessionUser(request)
+    if (!user?.organizationId || !user.id) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
 
     const { projectCategoryPresetIds, project_id } = await request.json()
@@ -25,11 +58,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const orgId = sessionUser.organizationId
+    const orgId = user.organizationId
 
-    await client.query('BEGIN')
-
-    const presetsResult = await client.query(
+    const presetsResult = await db.query(
       `SELECT id, name, description
        FROM public.project_category_presets
        WHERE id = ANY($1::int[]) AND is_active = true`,
@@ -37,14 +68,13 @@ export async function POST(request: NextRequest) {
     )
 
     if (presetsResult.rows.length === 0) {
-      await client.query('ROLLBACK')
       return NextResponse.json(
         { status: 'error', message: 'No matching project category presets found' },
         { status: 400 }
       )
     }
 
-    const expensePresetsResult = await client.query(
+    const expensePresetsResult = await db.query(
       `SELECT id, project_category_preset_id, name, description
        FROM public.expense_category_presets
        WHERE project_category_preset_id = ANY($1::int[]) AND is_active = true`,
@@ -68,7 +98,7 @@ export async function POST(request: NextRequest) {
     const createdExpenseCategories: any[] = []
 
     for (const preset of presetsResult.rows) {
-      const projectInsert = await client.query(
+      const projectInsert = await db.query(
         `INSERT INTO public.project_categories (category_name, description, organization_id, is_custom, project_id)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
@@ -80,7 +110,7 @@ export async function POST(request: NextRequest) {
 
       const expensePresets = expensePresetsByPresetId[preset.id] || []
       for (const expPreset of expensePresets) {
-        const expenseInsert = await client.query(
+        const expenseInsert = await db.query(
           `INSERT INTO public.expense_category (category_name, description, project_category_id, organization_id, project_id)
            VALUES ($1, $2, $3, $4, $5)
            RETURNING *`,
@@ -90,15 +120,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await client.query('COMMIT')
-
     return NextResponse.json({
       status: 'success',
       projectCategories: createdProjectCategories,
       expenseCategories: createdExpenseCategories,
     })
   } catch (error) {
-    await client.query('ROLLBACK')
     console.error('Error applying category presets:', error)
     return NextResponse.json(
       {
@@ -107,7 +134,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
-  } finally {
-    client.release()
   }
 }

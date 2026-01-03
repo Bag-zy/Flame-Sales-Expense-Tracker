@@ -1,0 +1,146 @@
+---
+title: Categories
+---
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tag, Briefcase, FilePlus, PlusCircle, CheckCircle, Settings, BarChart2, PiggyBank, PieChart, Folder, ShieldCheck } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Categories</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Organize and classify your business activities for better reporting and analysis.</p>
+</div>
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Tag className="h-6 w-6 mr-2" />What are Categories?</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Categories serve as classification systems for different aspects of your business:</p>
+    <ul className="list-disc pl-5 mt-4 space-y-2">
+      <li><b>Project Categories:</b> Group projects by type, department, or business unit.</li>
+      <li><b>Expense Categories:</b> Classify expenses for budgeting and reporting.</li>
+      <li><b>Custom Categories:</b> Create your own classification systems.</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Types of Categories
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><Briefcase className="h-6 w-6 mr-2" />Project Categories</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Group related projects together:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>By department (Marketing, Operations, IT)</li>
+        <li>By project type (Development, Research, Events)</li>
+        <li>By business unit or client</li>
+      </ul>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><FilePlus className="h-6 w-6 mr-2" />Expense Categories</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Classify your spending for better financial tracking:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Office supplies</li>
+        <li>Travel expenses</li>
+        <li>Equipment purchases</li>
+        <li>Professional services</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><PlusCircle className="h-6 w-6 mr-2" />Creating Categories</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Navigate to the Categories section in your application.</li>
+        <li>Select the type of category you want to create.</li>
+        <li>Click the "Create Category" button.</li>
+        <li>Enter the category name and description.</li>
+        <li>Set any additional properties as needed.</li>
+        <li>Click "Save" to create the category.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Using Categories</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Once created, categories can be applied to:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        <li>Projects during creation or editing</li>
+        <li>Expenses when recording them</li>
+        <li>Reports for filtering and analysis</li>
+        <li>Budgets for tracking spending by category</li>
+      </ul>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center"><Settings className="h-6 w-6 mr-2" />Category Presets</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>The application includes category presets that allow you to quickly apply common categories to projects. This is especially useful when setting up new organizations or standardizing categories across your business.</p>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+## Benefits of Using Categories
+
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div className="flex items-start space-x-4">
+    <BarChart2 className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Reporting</h3>
+      <p className="text-sm text-muted-foreground">Generate reports filtered by category.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <PiggyBank className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Budgeting</h3>
+      <p className="text-sm text-muted-foreground">Set and track budgets by category.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <PieChart className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Analysis</h3>
+      <p className="text-sm text-muted-foreground">Understand spending patterns and project distribution.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <Folder className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Organization</h3>
+      <p className="text-sm text-muted-foreground">Keep your data structured and manageable.</p>
+    </div>
+  </div>
+  <div className="flex items-start space-x-4">
+    <ShieldCheck className="h-8 w-8 text-primary" />
+    <div>
+      <h3 className="font-semibold">Compliance</h3>
+      <p className="text-sm text-muted-foreground">Maintain proper classification for accounting purposes.</p>
+    </div>
+  </div>
+</div>

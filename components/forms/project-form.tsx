@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switcher } from '@/components/ui/shadcn-io/navbar-12/Switcher';
 import {
   Dialog,
   DialogContent,
@@ -129,15 +130,13 @@ export function ProjectForm({
   const [newlyCreatedCategoryIds, setNewlyCreatedCategoryIds] = useState<{ projectCategoryIds: number[], expenseCategoryIds: number[] }>({ projectCategoryIds: [], expenseCategoryIds: [] });
 
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>([]);
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [currencyManuallySet, setCurrencyManuallySet] = useState(false);
 
   const reloadCategories = async () => {
     try {
       const projectId = editingProject ? editingProject.id : null;
-      const projectCategoriesUrl = projectId ? `/api/project-categories?projectId=${projectId}` : '/api/project-categories';
-      const expenseCategoriesUrl = projectId ? `/api/expense-categories?projectId=${projectId}` : '/api/expense-categories';
+      const projectCategoriesUrl = projectId ? `/api/v1/project-categories?projectId=${projectId}` : '/api/v1/project-categories';
+      const expenseCategoriesUrl = projectId ? `/api/v1/expense-categories?projectId=${projectId}` : '/api/v1/expense-categories';
 
       const [projectRes, expenseRes] = await Promise.all([
         fetch(projectCategoriesUrl),
@@ -158,35 +157,10 @@ export function ProjectForm({
     }
   };
 
-  const handleCurrencyInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setCurrencySearch(value);
-    setShowCurrencyDropdown(true);
-    setCurrencyManuallySet(true);
-
-    if (!value.trim()) {
-      // Clearing the input clears the selected currency code
-      setFormData((prev) => ({
-        ...prev,
-        currency_code: '',
-      }));
-    }
-  };
-
-  const handleSelectCurrency = (currency: CurrencyOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      currency_code: currency.code,
-    }));
-    setCurrencySearch(`${currency.code} - ${currency.name}`);
-    setCurrencyManuallySet(true);
-    setShowCurrencyDropdown(false);
-  };
-
   const loadCategoryPresets = async () => {
     try {
       setLoadingPresets(true);
-      const response = await fetch('/api/category-presets');
+      const response = await fetch('/api/v1/category-presets');
       const data = await response.json();
 
       if (data.status === 'success' && Array.isArray(data.presets)) {
@@ -217,7 +191,7 @@ export function ProjectForm({
   useEffect(() => {
     const loadCurrencies = async () => {
       try {
-        const response = await fetch('/api/currencies');
+        const response = await fetch('/api/v1/currencies');
         const data = await response.json();
         if (data.status === 'success') {
           setCurrencyOptions(data.currencies || []);
@@ -265,15 +239,6 @@ export function ProjectForm({
     }
   }, [editingProject, selectedOrganizationId]);
 
-  useEffect(() => {
-    if (formData.currency_code && currencyOptions.length > 0 && !currencySearch) {
-      const currency = currencyOptions.find((c) => c.code === formData.currency_code);
-      if (currency) {
-        setCurrencySearch(`${currency.code} - ${currency.name}`);
-      }
-    }
-  }, [formData.currency_code, currencyOptions, currencySearch]);
-
   // Auto-default project currency from selected organization's currency
   useEffect(() => {
     if (!formData.organization_id || currencyManuallySet) {
@@ -287,11 +252,6 @@ export function ProjectForm({
       ...prev,
       currency_code: org.currency_code as string,
     }));
-
-    const currency = currencyOptions.find((c) => c.code === org.currency_code);
-    if (currency) {
-      setCurrencySearch(`${currency.code} - ${currency.name}`);
-    }
   }, [formData.organization_id, organizations, currencyOptions, currencyManuallySet]);
 
   const selectedProjectCategoryId = formData.project_category_id
@@ -375,7 +335,7 @@ export function ProjectForm({
 
     try {
       setApplyingPresets(true);
-      const response = await fetch('/api/category-presets/apply', {
+      const response = await fetch('/api/v1/category-presets/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -472,7 +432,7 @@ export function ProjectForm({
       setIsSubmitting(true);
       let response: Response;
       if (editingProject) {
-        response = await fetch('/api/projects', {
+        response = await fetch('/api/v1/projects', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -480,7 +440,7 @@ export function ProjectForm({
           body: JSON.stringify({ ...params, id: editingProject.id }),
         });
       } else {
-        response = await fetch('/api/projects', {
+        response = await fetch('/api/v1/projects', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -501,7 +461,7 @@ export function ProjectForm({
           // This is a new project, so we need to claim the categories
           const newProject = data.project as Project;
           if (newlyCreatedCategoryIds.projectCategoryIds.length > 0 || newlyCreatedCategoryIds.expenseCategoryIds.length > 0) {
-            await fetch('/api/categories/claim', {
+            await fetch('/api/v1/categories/claim', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -529,7 +489,7 @@ export function ProjectForm({
     }
 
     try {
-      const response = await fetch('/api/project-categories', {
+      const response = await fetch('/api/v1/project-categories', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -562,14 +522,10 @@ export function ProjectForm({
     }
   };
 
-  const filteredCurrencies = currencyOptions.filter((currency) => {
-    if (!currencySearch.trim()) return true;
-    const query = currencySearch.toLowerCase();
-    return (
-      currency.code.toLowerCase().includes(query) ||
-      (currency.name || '').toLowerCase().includes(query)
-    );
-  });
+  const currencyItems = currencyOptions.map((currency) => ({
+    value: currency.code,
+    label: `${currency.code} - ${currency.name}`,
+  }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mt-2">
@@ -641,7 +597,7 @@ export function ProjectForm({
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Or choose "Add custom category" on the left to define your own
+                    Or choose &quot;Add custom category&quot; on the left to define your own
                     project and expense categories.
                   </p>
                 )}
@@ -689,32 +645,32 @@ export function ProjectForm({
               </label>
               <div className="group relative">
                 <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                  Category for your project (e.g., "Office Furniture", "Medical
-                  Expenses", "Food")
+                <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  Group this project under a project category (e.g., &#34;Construction&#34;, &#34;Retail&#34;,
+                  &#34;Services&#34;)
                 </div>
               </div>
             </div>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
-                <select
+                <Switcher
+                  items={visibleProjectCategories.map((category) => ({
+                    value: category.id.toString(),
+                    label: category.category_name,
+                  }))}
                   value={formData.project_category_id}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                  onChange={(value) =>
                     setFormData((prev) => ({
                       ...prev,
-                      project_category_id: e.target.value,
+                      project_category_id: value,
                     }))
                   }
-                  required
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                >
-                  <option value="">Select category</option>
-                  {visibleProjectCategories.map((category) => (
-                    <option key={category.id} value={category.id.toString()}>
-                      {category.category_name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select category"
+                  searchPlaceholder="Search category..."
+                  emptyText="No categories found."
+                  widthClassName="w-full"
+                  allowClear={false}
+                />
               </div>
               <Button
                 variant="outline"
@@ -769,32 +725,32 @@ export function ProjectForm({
                 </label>
                 <div className="group relative">
                   <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    Category for your expenses (e.g., "Office Supplies", "Travel",
-                    "Equipment")
+                  <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Category for your expenses (e.g., &quot;Office Supplies&quot;, &quot;Travel&quot;,
+                    &quot;Equipment&quot;)
                   </div>
                 </div>
               </div>
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
-                  <select
+                  <Switcher
+                    items={filteredExpenseCategories.map((category) => ({
+                      value: category.id.toString(),
+                      label: category.category_name,
+                    }))}
                     value={formData.expense_category_id}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                    onChange={(value) =>
                       setFormData((prev) => ({
                         ...prev,
-                        expense_category_id: e.target.value,
+                        expense_category_id: value,
                       }))
                     }
-                    required
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                  >
-                    <option value="">Select expense category</option>
-                    {filteredExpenseCategories.map((category) => (
-                      <option key={category.id} value={category.id.toString()}>
-                        {category.category_name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Select expense category"
+                    searchPlaceholder="Search expense category..."
+                    emptyText="No expense categories found."
+                    widthClassName="w-full"
+                    allowClear={false}
+                  />
                 </div>
               </div>
             </div>
@@ -806,57 +762,47 @@ export function ProjectForm({
               </label>
               <div className="group relative">
                 <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                <div className="hidden md:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-primary-foreground bg-primary rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                   Select the organization this project belongs to
                 </div>
               </div>
             </div>
-            <select
+            <Switcher
+              items={organizations.map((org) => ({
+                value: org.id.toString(),
+                label: org.name,
+              }))}
               value={formData.organization_id}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              onChange={(value) =>
                 setFormData((prev) => ({
                   ...prev,
-                  organization_id: e.target.value,
+                  organization_id: value,
                 }))
               }
-              required
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-            >
-              <option value="">Select organization</option>
-              {organizations.map((org) => (
-                <option key={org.id} value={org.id.toString()}>
-                  {org.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Select organization"
+              searchPlaceholder="Search organization..."
+              emptyText="No organizations found."
+              widthClassName="w-full"
+              allowClear={false}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground">
               Project Currency <span className="text-red-500">*</span>
             </label>
-            <div className="mt-1 relative">
-              <Input
-                placeholder="Search currency"
-                value={currencySearch}
-                onChange={handleCurrencyInputChange}
-                onFocus={() => setShowCurrencyDropdown(true)}
-              />
-              {showCurrencyDropdown && filteredCurrencies.length > 0 && (
-                <div className="absolute z-20 mt-1 w-full bg-popover border border-border rounded-md shadow max-h-40 overflow-y-auto">
-                  {filteredCurrencies.map((currency) => (
-                    <button
-                      key={currency.code}
-                      type="button"
-                      onClick={() => handleSelectCurrency(currency)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                    >
-                      <div className="font-medium text-foreground">{currency.code}</div>
-                      <div className="text-xs text-muted-foreground">{currency.name}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Switcher
+              items={currencyItems}
+              value={formData.currency_code}
+              onChange={(value) => {
+                setFormData((prev) => ({ ...prev, currency_code: value }));
+                setCurrencyManuallySet(true);
+              }}
+              placeholder="Select currency"
+              searchPlaceholder="Search currency..."
+              emptyText="No currencies found."
+              widthClassName="w-full"
+              allowClear={false}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

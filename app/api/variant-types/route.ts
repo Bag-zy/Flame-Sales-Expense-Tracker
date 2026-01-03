@@ -1,31 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
-import { getSessionUser, isUserMidSetup } from '@/lib/api-auth';
+import { db } from '@/lib/database';
+import { getApiOrSessionUser } from '@/lib/api-auth-keys';
+import { isUserMidSetup } from '@/lib/api-auth';
 import { seedVariantTypes } from '@/lib/seed-variant-types';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * @swagger
+ * /api/variant-types:
+ *   get:
+ *     operationId: listVariantTypes
+ *     tags:
+ *       - Lookups
+ *     summary: List product variant types and their units of measurement
+ *     security:
+ *       - stackSession: []
+ *     responses:
+ *       200:
+ *         description: Variant types fetched successfully (seeding if necessary).
+ *       401:
+ *         description: API key required.
+ */
+
 export async function GET(request: NextRequest) {
-  let pool: Pool | null = null;
-  
   try {
-    const sessionUser = await getSessionUser(request);
+    const user = await getApiOrSessionUser(request);
     const midSetup = await isUserMidSetup(request);
 
-    if (!sessionUser?.id || (!sessionUser.organizationId && !midSetup)) {
-      return NextResponse.json({ status: 'error', message: 'Authentication required' }, { status: 401 });
+    if (!user?.id || (!user.organizationId && !midSetup)) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
 
-    pool = new Pool({
-      host: process.env.PG_HOST,
-      database: process.env.PG_DATABASE,
-      user: process.env.PG_USER,
-      password: process.env.PG_PASSWORD,
-      port: parseInt(process.env.PG_PORT || '5432')
-    });
-
     // First, try to get the variant types
-    const result = await pool.query(`
+    const result = await db.query(`
       SELECT 
         vt.id,
         vt.type_name,
@@ -47,7 +55,7 @@ export async function GET(request: NextRequest) {
       await seedVariantTypes();
       
       // Fetch the data again after seeding
-      const seededResult = await pool.query(`
+      const seededResult = await db.query(`
         SELECT 
           vt.id,
           vt.type_name,
@@ -80,7 +88,5 @@ export async function GET(request: NextRequest) {
       status: 'error',
       message: 'Failed to fetch variant types'
     }, { status: 500 });
-  } finally {
-    if (pool) await pool.end();
   }
 }

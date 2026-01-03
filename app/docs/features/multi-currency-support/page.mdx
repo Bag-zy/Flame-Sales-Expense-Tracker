@@ -1,0 +1,134 @@
+---
+title: Multi-Currency Support
+---
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Globe, ArrowRightLeft, Landmark, Briefcase, FilePlus, ShoppingCart, BarChart2, Settings, CheckCircle, Server, AlertTriangle, ArrowRight } from 'lucide-react';
+
+<div className="text-center my-12">
+  <h1 className="text-5xl font-bold">Multi-Currency Support</h1>
+  <p className="text-xl mt-4 text-muted-foreground">Manage transactions in multiple currencies with automatic conversion for accurate reporting.</p>
+</div>
+
+<Callout type="info" title="Multi-currency capabilities">
+  Flame supports multi-currency operations with automatic conversion to organization base currency for accurate financial reporting. The system handles currency differences between organizations, projects, and transactions seamlessly.
+</Callout>
+
+<Card className="mt-8">
+  <CardHeader>
+    <CardTitle className="flex items-center"><Globe className="h-6 w-6 mr-2" />How Multi-Currency Works</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <div>
+      <h3 className="font-semibold flex items-center"><Landmark className="h-5 w-5 mr-2" />Organization Base Currency</h3>
+      <p className="text-sm text-muted-foreground">Each organization has a designated base currency for standard financial reporting. All reports and analytics automatically display values in this currency.</p>
+    </div>
+    <div>
+      <h3 className="font-semibold flex items-center"><Briefcase className="h-5 w-5 mr-2" />Project-Level Currencies</h3>
+      <p className="text-sm text-muted-foreground">Projects can have their own currencies, and the system automatically converts these amounts to the organization's base currency for consolidated reporting.</p>
+    </div>
+    <div>
+      <h3 className="font-semibold flex items-center"><ArrowRightLeft className="h-5 w-5 mr-2" />Automatic Conversion Process</h3>
+      <p className="text-sm text-muted-foreground">The system automatically converts amounts using real-time exchange rates when recording multi-currency expenses and sales, or generating reports.</p>
+    </div>
+  </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><FilePlus className="h-6 w-6 mr-2" />Recording Multi-Currency Expenses</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Select the appropriate currency for the transaction.</li>
+        <li>Enter the amount in the transaction currency.</li>
+        <li>The system automatically calculates and stores the equivalent amount in your organization's base currency.</li>
+      </ol>
+    </CardContent>
+  </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center"><ShoppingCart className="h-6 w-6 mr-2" />Recording Multi-Currency Sales</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>Specify the currency in which the sale occurred.</li>
+        <li>Enter the sale amount in that currency.</li>
+        <li>The system converts and stores the value in your organization's base currency.</li>
+      </ol>
+    </CardContent>
+  </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><BarChart2 className="h-6 w-6 mr-2" />Reporting with Multi-Currency Data</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>All reports automatically aggregate data into your organization's base currency, ensuring consistent and accurate financial reporting. You can still drill down to view original transaction amounts.</p>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Settings className="h-6 w-6 mr-2" />Managing Currency Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>Admins can set the organization's base currency, and project managers can specify project-specific currencies to suit their operational needs.</p>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<Card>
+    <CardHeader>
+        <CardTitle className="flex items-center"><CheckCircle className="h-6 w-6 mr-2" />Best Practices</CardTitle>
+    </CardHeader>
+    <CardContent>
+        <ul className="list-disc pl-5 space-y-2">
+            <li>Ensure you're using the correct currency for each transaction.</li>
+            <li>Periodically review your organization's base currency.</li>
+            <li>Use project-specific currencies for projects operating in a different currency.</li>
+            <li>Be aware that exchange rates fluctuate.</li>
+        </ul>
+    </CardContent>
+</Card>
+
+<Separator className="my-8" />
+
+<div className="grid md:grid-cols-2 gap-8">
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><Server className="h-6 w-6 mr-2" />Technical Implementation</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>The system uses a robust currency conversion API with fallback mechanisms and caching to ensure reliability and performance. Both original and converted amounts are stored.</p>
+        </CardContent>
+    </Card>
+    <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center"><AlertTriangle className="h-6 w-6 mr-2" />Troubleshooting</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p>If conversion fails, the original amount is preserved. Exchange rates update hourly, which may cause minor discrepancies. The dual-API approach minimizes downtime.</p>
+        </CardContent>
+    </Card>
+</div>
+
+<Separator className="my-8" />
+
+<div>
+  <h2 className="text-2xl font-bold">Related pages</h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <a href="/docs/features/organizations-and-users" className="block p-4 border rounded-lg hover:bg-muted">Organizations <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/projects" className="block p-4 border rounded-lg hover:bg-muted">Projects <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/expenses" className="block p-4 border rounded-lg hover:bg-muted">Expenses <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+    <a href="/docs/features/sales" className="block p-4 border rounded-lg hover:bg-muted">Sales <ArrowRight className="inline h-4 w-4 ml-2" /></a>
+  </div>
+</div>

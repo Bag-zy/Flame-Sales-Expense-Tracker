@@ -1,14 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { getSessionUser } from '@/lib/api-auth';
+import { getApiOrSessionUser } from '@/lib/api-auth-keys';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * @swagger
+ * /api/categories/claim:
+ *   post:
+ *     operationId: claimCategoriesForProject
+ *     tags:
+ *       - Projects
+ *     summary: Attach existing project and expense categories to a project
+ *     security:
+ *       - stackSession: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               projectId:
+ *                 type: integer
+ *               projectCategoryIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *               expenseCategoryIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *             required:
+ *               - projectId
+ *     responses:
+ *       200:
+ *         description: Categories claimed successfully.
+ *       400:
+ *         description: Validation error.
+ *       401:
+ *         description: API key required.
+ */
+
 export async function POST(request: NextRequest) {
   try {
-    const sessionUser = await getSessionUser(request);
-    if (!sessionUser?.id || !sessionUser.organizationId) {
-      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });
+    const user = await getApiOrSessionUser(request);
+    if (!user?.id || !user.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
 
     const { projectId, projectCategoryIds, expenseCategoryIds } = await request.json();
@@ -20,14 +58,14 @@ export async function POST(request: NextRequest) {
     if (projectCategoryIds && projectCategoryIds.length > 0) {
       await db.query(
         'UPDATE project_categories SET project_id = $1 WHERE id = ANY($2::int[]) AND organization_id = $3',
-        [projectId, projectCategoryIds, sessionUser.organizationId]
+        [projectId, projectCategoryIds, user.organizationId]
       );
     }
 
     if (expenseCategoryIds && expenseCategoryIds.length > 0) {
       await db.query(
         'UPDATE expense_category SET project_id = $1 WHERE id = ANY($2::int[]) AND organization_id = $3',
-        [projectId, expenseCategoryIds, sessionUser.organizationId]
+        [projectId, expenseCategoryIds, user.organizationId]
       );
     }
 
