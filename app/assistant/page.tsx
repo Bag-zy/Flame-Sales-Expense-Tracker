@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthGuard } from '@/components/auth-guard'
-import { Button } from '@/components/ui/button'
 import { UIResourceRenderer } from '@mcp-ui/client'
 
 import {
@@ -127,7 +126,6 @@ export default function AssistantPage() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loadingMessages, setLoadingMessages] = useState(false)
-  const [creatingSession, setCreatingSession] = useState(false)
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
 
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -173,30 +171,6 @@ export default function AssistantPage() {
       }
     } catch {
       return
-    }
-  }
-
-  const createSession = async () => {
-    setCreatingSession(true)
-    try {
-      const res = await fetch('/api/v1/assistant-chat-sessions', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-
-      const data = await res.json()
-      if (data.status !== 'success') {
-        toast.error(data.message || 'Failed to create session')
-        return
-      }
-
-      const session = data.session as ChatSession
-      router.push(`/assistant?session_id=${session.id}`)
-    } catch {
-      toast.error('Failed to create session')
-    } finally {
-      setCreatingSession(false)
     }
   }
 
@@ -365,19 +339,6 @@ export default function AssistantPage() {
   return (
     <AuthGuard>
       <div className="p-6">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold">Assistant</h1>
-            <p className="text-sm text-muted-foreground">
-              Your saved conversations are stored privately in your account.
-            </p>
-          </div>
-
-          <Button onClick={createSession} disabled={creatingSession}>
-            New chat
-          </Button>
-        </div>
-
         {loadingMessages ? (
           <div className="text-sm text-muted-foreground">Loading...</div>
         ) : !activeSessionId ? (

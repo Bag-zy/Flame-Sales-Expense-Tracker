@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean) as Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>
 
     const systemPrefix =
-      "Never include <think>...</think> in your output. Do not reveal chain-of-thought. If you want to think, do it silently and only return the final answer."
+      'For every reply: write your reasoning inside <think>...</think> first, then write the final answer for the user. The host will hide the <think> block by default, so keep it useful but not excessively long.'
 
     const res = await fetch(
       'https://api.groq.com/openai/v1/chat/completions',

@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useUser, useStackApp } from '@stackframe/stack'
 import { DiscordLogoIcon } from '@radix-ui/react-icons'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import {
   Sidebar,
@@ -36,6 +37,7 @@ interface ChatSession {
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const user = useUser()
   const app = useStackApp()
@@ -45,6 +47,7 @@ export function AppSidebar() {
 
   const [assistantSessions, setAssistantSessions] = useState<ChatSession[]>([])
   const [assistantSessionsLoading, setAssistantSessionsLoading] = useState(false)
+  const [assistantCreatingSession, setAssistantCreatingSession] = useState(false)
 
   const activeAssistantSessionId = useMemo(() => {
     const raw = searchParams.get('session_id')
@@ -52,6 +55,30 @@ export function AppSidebar() {
     const id = parseInt(raw, 10)
     return Number.isFinite(id) ? id : null
   }, [searchParams])
+
+  const createAssistantSession = async () => {
+    setAssistantCreatingSession(true)
+    try {
+      const res = await fetch('/api/v1/assistant-chat-sessions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data || data.status !== 'success') {
+        toast.error(data?.message || 'Failed to create session')
+        return
+      }
+
+      const session = data.session as ChatSession
+      router.push(`/assistant?session_id=${session.id}`)
+    } catch {
+      toast.error('Failed to create session')
+    } finally {
+      setAssistantCreatingSession(false)
+    }
+  }
 
   useEffect(() => {
     if (!isAssistantRoute) return
@@ -113,6 +140,20 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupLabel>Conversations</SidebarGroupLabel>
             <SidebarGroupContent>
+              <div className="px-2 pb-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                <div className="mb-2">
+                  Your saved conversations are stored privately in your account.
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full justify-center"
+                  onClick={createAssistantSession}
+                  disabled={assistantCreatingSession}
+                >
+                  New chat
+                </Button>
+              </div>
+
               {assistantSessionsLoading ? (
                 <div className="px-2 py-2 text-xs text-muted-foreground">Loading...</div>
               ) : assistantSessions.length === 0 ? (
