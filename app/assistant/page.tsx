@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AuthGuard } from '@/components/auth-guard'
 import { UIResourceRenderer } from '@mcp-ui/client'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Bot, User } from 'lucide-react'
 
 import {
   ChatHandler,
@@ -75,6 +77,21 @@ function McpUiPartUI() {
   )
 }
 
+function ChatAvatar({ role }: { role: string }) {
+  const isUser = role === 'user'
+  return (
+    <div
+      className={
+        isUser
+          ? 'flex h-9 w-9 items-center justify-center rounded-full border bg-background'
+          : 'flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground'
+      }
+    >
+      {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+    </div>
+  )
+}
+
 function ReasoningPartUI() {
   const part = usePart<ReasoningPart>('data-reasoning')
   const text = typeof part?.data === 'string' ? part.data : ''
@@ -97,23 +114,40 @@ function ChatMessagesListWithMcp() {
   }, [messages.length, messages[messages.length - 1]?.parts?.[0]])
 
   return (
-    <div ref={scrollableRef} className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto">
-      {messages.map((message, idx) => (
-        <ChatMessage key={message.id} message={message} isLast={idx === messages.length - 1}>
-          <ChatMessage.Avatar />
-          <ChatMessage.Content>
-            <ChatMessage.Part.File />
-            <ChatMessage.Part.Event />
-            <ReasoningPartUI />
-            <ChatMessage.Part.Markdown />
-            <McpUiPartUI />
-            <ChatMessage.Part.Artifact />
-            <ChatMessage.Part.Source />
-            <ChatMessage.Part.Suggestion />
-          </ChatMessage.Content>
-          <ChatMessage.Actions />
-        </ChatMessage>
-      ))}
+    <div ref={scrollableRef} className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-3 py-4 md:px-6">
+      <AnimatePresence initial={false}>
+        {messages.map((message, idx) => (
+          <motion.div
+            key={message.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className={message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}
+          >
+            <ChatMessage
+              message={message}
+              isLast={idx === messages.length - 1}
+              className={message.role === 'user' ? 'max-w-[48rem] flex-row-reverse items-start' : 'max-w-[48rem] items-start'}
+            >
+              <ChatMessage.Avatar>
+                <ChatAvatar role={message.role} />
+              </ChatMessage.Avatar>
+              <ChatMessage.Content className={message.role === 'user' ? 'rounded-lg bg-muted/60 p-3' : 'rounded-lg bg-background p-3'}>
+                <ChatMessage.Part.File />
+                <ChatMessage.Part.Event />
+                <ReasoningPartUI />
+                <ChatMessage.Part.Markdown />
+                <McpUiPartUI />
+                <ChatMessage.Part.Artifact />
+                <ChatMessage.Part.Source />
+                <ChatMessage.Part.Suggestion />
+              </ChatMessage.Content>
+              <ChatMessage.Actions />
+            </ChatMessage>
+          </motion.div>
+        ))}
+      </AnimatePresence>
       <ChatMessages.Empty />
       <ChatMessages.Loading />
     </div>
