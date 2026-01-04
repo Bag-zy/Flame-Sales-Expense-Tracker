@@ -45,6 +45,26 @@ type McpUiPart = {
   data: any
 }
 
+type ReasoningPart = {
+  type: 'data-reasoning'
+  data: string
+}
+
+function splitThinkBlocks(input: string): { visible: string; reasoning: string } {
+  if (!input) return { visible: '', reasoning: '' }
+  const re = /<think>([\s\S]*?)<\/think>/gi
+  let reasoning = ''
+  let match: RegExpExecArray | null
+
+  while ((match = re.exec(input))) {
+    const chunk = (match[1] || '').trim()
+    if (chunk) reasoning += (reasoning ? '\n\n' : '') + chunk
+  }
+
+  const visible = input.replace(re, '').trimEnd()
+  return { visible, reasoning }
+}
+
 function McpUiPartUI() {
   const part = usePart<McpUiPart>('data-mcp_ui')
   const resource = part?.data
@@ -53,6 +73,18 @@ function McpUiPartUI() {
     <div className="mt-3">
       <UIResourceRenderer resource={resource} />
     </div>
+  )
+}
+
+function ReasoningPartUI() {
+  const part = usePart<ReasoningPart>('data-reasoning')
+  const text = typeof part?.data === 'string' ? part.data : ''
+  if (!text.trim()) return null
+  return (
+    <details className="mt-3 rounded-md border bg-muted/30 p-3 text-sm">
+      <summary className="cursor-pointer select-none font-medium">Reasoning</summary>
+      <div className="mt-2 whitespace-pre-wrap text-muted-foreground">{text}</div>
+    </details>
   )
 }
 
@@ -74,6 +106,7 @@ function ChatMessagesListWithMcp() {
             <ChatMessage.Part.File />
             <ChatMessage.Part.Event />
             <ChatMessage.Part.Markdown />
+            <ReasoningPartUI />
             <McpUiPartUI />
             <ChatMessage.Part.Artifact />
             <ChatMessage.Part.Source />
@@ -172,7 +205,14 @@ export default function AssistantPage() {
       const role: 'system' | 'user' | 'assistant' =
         m.role === 'user' ? 'user' : m.role === 'system' ? 'system' : 'assistant'
 
-      const parts: any[] = [{ type: TextPartType, text: m.content ?? '' }]
+      const { visible: visibleText, reasoning: parsedReasoning } = splitThinkBlocks(m.content ?? '')
+      const parts: any[] = [{ type: TextPartType, text: visibleText }]
+
+      const savedReasoning = typeof m?.metadata?.reasoning === 'string' ? m.metadata.reasoning : ''
+      const reasoningText = savedReasoning || parsedReasoning
+      if (reasoningText && reasoningText.trim()) {
+        parts.push({ type: 'data-reasoning', data: reasoningText })
+      }
 
       const uiResource = m?.metadata?.uiResource
       if (uiResource && typeof uiResource === 'object') {

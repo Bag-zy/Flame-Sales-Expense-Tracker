@@ -10,6 +10,21 @@ function extractGroqText(data: any): string | null {
   return typeof text === 'string' && text.trim() ? text : null
 }
 
+function splitThinkBlocks(input: string): { visible: string; reasoning: string } {
+  if (!input) return { visible: '', reasoning: '' }
+  const re = /<think>([\s\S]*?)<\/think>/gi
+  let reasoning = ''
+  let match: RegExpExecArray | null
+
+  while ((match = re.exec(input))) {
+    const chunk = (match[1] || '').trim()
+    if (chunk) reasoning += (reasoning ? '\n\n' : '') + chunk
+  }
+
+  const visible = input.replace(re, '').trimEnd()
+  return { visible, reasoning }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
@@ -84,6 +99,9 @@ export async function POST(request: NextRequest) {
       })
       .filter(Boolean) as Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>
 
+    const systemPrefix =
+      "Never include <think>...</think> in your output. Do not reveal chain-of-thought. If you want to think, do it silently and only return the final answer."
+
     const res = await fetch(
       'https://api.groq.com/openai/v1/chat/completions',
       {
@@ -94,7 +112,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           model,
-          messages,
+          messages: [{ role: 'system', content: systemPrefix }, ...messages],
           temperature: 0.6,
           top_p: 0.95,
           max_completion_tokens: 4096,
@@ -130,13 +148,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { visible, reasoning } = splitThinkBlocks(assistantText)
+
     const inserted = await db.query(
       `
-      INSERT INTO assistant_chat_messages (session_id, role, content)
-      VALUES ($1, 'assistant', $2)
+      INSERT INTO assistant_chat_messages (session_id, role, content, metadata)
+      VALUES ($1, 'assistant', $2, $3)
       RETURNING *
       `,
-      [sessionId, assistantText],
+      [sessionId, visible, reasoning.trim() ? { reasoning: reasoning.trim() } : null],
     )
 
     void db.query(

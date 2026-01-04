@@ -230,6 +230,85 @@ function extractUiResourceFromToolResult(toolResult: any): any | null {
   return null
 }
 
+function parseAssistantNaturalToolIntent(input: string):
+  | { toolName: string; toolArgs: Record<string, unknown>; message: string }
+  | null {
+  const raw = input.trim().toLowerCase()
+  if (!raw) return null
+
+  if (
+    raw === 'projects' ||
+    raw === 'project' ||
+    raw === 'show projects' ||
+    raw === 'list projects' ||
+    raw.includes('which projects') ||
+    raw.includes('my projects') ||
+    raw.includes('projects in my organisation') ||
+    raw.includes('projects in my organization')
+  ) {
+    return { toolName: 'show_projects', toolArgs: {}, message: 'Opening Projects…' }
+  }
+
+  if (raw === 'expenses' || raw === 'show expenses' || raw === 'list expenses' || raw.includes('expenses')) {
+    const projectMatch = raw.match(/project\s*(?:id)?\s*[=:]?\s*(\d+)/i)
+    const cycleMatch = raw.match(/cycle\s*(?:id)?\s*[=:]?\s*(\d+)/i)
+    const toolArgs: Record<string, unknown> = {}
+    if (projectMatch?.[1]) toolArgs.projectId = projectMatch[1]
+    if (cycleMatch?.[1]) toolArgs.cycleId = cycleMatch[1]
+    return { toolName: 'show_expenses', toolArgs, message: 'Opening Expenses…' }
+  }
+
+  return null
+}
+
+function createThinkStripper() {
+  let inThink = false
+  let carry = ''
+  return {
+    consume(delta: string) {
+      carry += delta
+      let visible = ''
+      let reasoning = ''
+
+      while (carry.length) {
+        if (!inThink) {
+          const start = carry.indexOf('<think>')
+          if (start === -1) {
+            visible += carry
+            carry = ''
+            break
+          }
+
+          visible += carry.slice(0, start)
+          carry = carry.slice(start + '<think>'.length)
+          inThink = true
+          continue
+        }
+
+        const end = carry.indexOf('</think>')
+        if (end === -1) {
+          reasoning += carry
+          carry = ''
+          break
+        }
+
+        reasoning += carry.slice(0, end)
+        carry = carry.slice(end + '</think>'.length)
+        inThink = false
+      }
+
+      return { visible, reasoning }
+    },
+    flush() {
+      if (!carry) return { visible: '', reasoning: '' }
+      const rest = carry
+      carry = ''
+      if (inThink) return { visible: '', reasoning: rest }
+      return { visible: rest, reasoning: '' }
+    },
+  }
+}
+
 function parseAssistantSlashCommand(input: string):
   | { toolName: string; toolArgs: Record<string, unknown>; message: string }
   | null {
@@ -308,8 +387,10 @@ export async function POST(request: NextRequest) {
 
     const mcpWorkerBaseUrl = process.env.MCP_WORKER_BASE_URL
     const slashCmd = lastRole === 'user' ? parseAssistantSlashCommand(lastContent) : null
+    const naturalCmd = lastRole === 'user' ? parseAssistantNaturalToolIntent(lastContent) : null
+    const toolCmd = slashCmd || naturalCmd
 
-    if (slashCmd) {
+    if (toolCmd) {
       if (!mcpWorkerBaseUrl) {
         return NextResponse.json(
           { status: 'error', message: 'MCP_WORKER_BASE_URL environment variable is not set' },
@@ -318,7 +399,7 @@ export async function POST(request: NextRequest) {
       }
 
       const encoder = new TextEncoder()
-      const text = slashCmd.message
+      const text = toolCmd.message
 
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
@@ -354,8 +435,8 @@ export async function POST(request: NextRequest) {
 
             const { result } = await callMcpTool({
               baseUrl: mcpWorkerBaseUrl,
-              toolName: slashCmd.toolName,
-              toolArgs: slashCmd.toolArgs,
+              toolName: toolCmd.toolName,
+              toolArgs: toolCmd.toolArgs,
               authHeader,
             })
 
@@ -416,6 +497,9 @@ export async function POST(request: NextRequest) {
       })
       .filter(Boolean) as Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>
 
+    const systemPrefix =
+      "Never include <think>...</think> in your output. Do not reveal chain-of-thought. If you want to think, do it silently and only return the final answer."
+
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -424,7 +508,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model,
-        messages,
+        messages: [{ role: 'system', content: systemPrefix }, ...messages],
         temperature: 0.6,
         top_p: 0.95,
         max_completion_tokens: 4096,
@@ -464,7 +548,10 @@ export async function POST(request: NextRequest) {
     const decoder = new TextDecoder()
 
     let fullText = ''
+    let reasoningText = ''
     let buffer = ''
+
+    const thinkStripper = createThinkStripper()
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -500,21 +587,32 @@ export async function POST(request: NextRequest) {
                 const delta = extractGroqDeltaText(json)
                 if (!delta) continue
 
-                fullText += delta
-                controller.enqueue(encoder.encode(delta))
+                const { visible, reasoning } = thinkStripper.consume(delta)
+                if (reasoning) reasoningText += reasoning
+                if (!visible) continue
+
+                fullText += visible
+                controller.enqueue(encoder.encode(visible))
               }
 
               sepIndex = buffer.indexOf('\n\n')
             }
           }
 
+          const flushed = thinkStripper.flush()
+          if (flushed.reasoning) reasoningText += flushed.reasoning
+          if (flushed.visible) {
+            fullText += flushed.visible
+            controller.enqueue(encoder.encode(flushed.visible))
+          }
+
           if (fullText.trim()) {
             await db.query(
               `
-              INSERT INTO assistant_chat_messages (session_id, role, content)
-              VALUES ($1, 'assistant', $2)
+              INSERT INTO assistant_chat_messages (session_id, role, content, metadata)
+              VALUES ($1, 'assistant', $2, $3)
               `,
-              [sessionId, fullText],
+              [sessionId, fullText, reasoningText.trim() ? { reasoning: reasoningText.trim() } : null],
             )
 
             await db.query(
