@@ -12,7 +12,11 @@ function getServiceAdapter() {
   })
 }
 
-export const POST = copilotRuntimeNextJSAppRouterEndpoint({
+const handler = copilotRuntimeNextJSAppRouterEndpoint({
   runtime: copilotRuntime,
   serviceAdapter: getServiceAdapter(),
 })
+
+export async function POST(req: Request) {
+  return handler(req as any)
+}
