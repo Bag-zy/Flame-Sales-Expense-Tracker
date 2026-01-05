@@ -120,7 +120,7 @@ export default function RootLayout({
           <StackProvider app={stackClientApp}>
             <StackTheme>
               <Suspense fallback={null}>
-                <CopilotKit runtimeUrl="/api/copilotkit">
+                <CopilotKit runtimeUrl="/api/v1/copilotkit">
                   <AppShell>{children}</AppShell>
                 </CopilotKit>
               </Suspense>

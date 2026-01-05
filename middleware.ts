@@ -34,13 +34,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Allow internal/system endpoints to remain unversioned.
-  if (
-    pathname === '/api/openapi' ||
-    pathname.startsWith('/api/mcp') ||
-    pathname === '/api/copilotkit' ||
-    pathname.startsWith('/api/copilotkit/') ||
-    pathname === '/api/assistant-mcp-ui'
-  ) {
+  if (pathname === '/api/openapi' || pathname.startsWith('/api/mcp')) {
     return NextResponse.next()
   }
 

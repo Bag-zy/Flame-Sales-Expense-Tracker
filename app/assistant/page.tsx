@@ -21,7 +21,7 @@ export default function AssistantPage() {
         const toolArgs =
           toolArgsRaw && typeof toolArgsRaw === 'object' && !Array.isArray(toolArgsRaw) ? toolArgsRaw : {}
 
-        const res = await fetch('/api/assistant-mcp-ui', {
+        const res = await fetch('/api/v1/assistant-mcp-ui', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ toolName, toolArgs }),
@@ -68,7 +68,7 @@ export default function AssistantPage() {
       description: 'Open the Flame dashboard UI.',
       parameters: [],
       handler: async () => {
-        const res = await fetch('/api/assistant-mcp-ui', {
+        const res = await fetch('/api/v1/assistant-mcp-ui', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ toolName: 'show_dashboard', toolArgs: {} }),
@@ -99,7 +99,7 @@ export default function AssistantPage() {
       description: 'Open the Flame reports UI.',
       parameters: [],
       handler: async () => {
-        const res = await fetch('/api/assistant-mcp-ui', {
+        const res = await fetch('/api/v1/assistant-mcp-ui', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ toolName: 'show_reports', toolArgs: {} }),
@@ -130,7 +130,7 @@ export default function AssistantPage() {
       description: 'Open the Flame projects UI.',
       parameters: [],
       handler: async () => {
-        const res = await fetch('/api/assistant-mcp-ui', {
+        const res = await fetch('/api/v1/assistant-mcp-ui', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ toolName: 'show_projects', toolArgs: {} }),
@@ -168,7 +168,7 @@ export default function AssistantPage() {
         if (args?.projectId) toolArgs.projectId = args.projectId
         if (args?.cycleId) toolArgs.cycleId = args.cycleId
 
-        const res = await fetch('/api/assistant-mcp-ui', {
+        const res = await fetch('/api/v1/assistant-mcp-ui', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ toolName: 'show_expenses', toolArgs }),
