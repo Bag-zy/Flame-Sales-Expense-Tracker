@@ -10,6 +10,18 @@ module.exports = async () => {
   const baseConfig = {
     // Configure pageExtensions to include md and mdx
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
+    async rewrites() {
+      return [
+        {
+          source: '/api/v1/copilotkit',
+          destination: '/api/copilotkit',
+        },
+        {
+          source: '/api/v1/copilotkit/:path*',
+          destination: '/api/copilotkit/:path*',
+        },
+      ]
+    },
     images: {
       // Disable Next.js image optimization so Cloudflare/OpenNext serves
       // images directly from the public folder without using /_next/image.
