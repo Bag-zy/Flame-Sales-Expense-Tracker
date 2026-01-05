@@ -8,7 +8,7 @@ const copilotRuntime = new CopilotRuntime()
 function getServiceAdapter() {
   return new GroqAdapter({
     groq: new Groq({ apiKey: process.env.GROQ_API_KEY }),
-    model: 'llama-3.1-70b-versatile',
+    model: 'qwen/qwen3-32b',
   })
 }
 

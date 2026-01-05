@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { CopilotChat } from '@copilotkit/react-ui'
 import { useFrontendTool } from '@copilotkit/react-core'
@@ -83,7 +82,7 @@ export default function AssistantPage() {
       render: ({ status, result }) => {
         if (status !== 'complete') return <div className="mt-3 text-sm text-muted-foreground">Opening Dashboard…</div>
         const uiResource = (result as any)?.uiResource
-        if (!uiResource || typeof uiResource !== 'object') return null
+        if (!uiResource || typeof uiResource !== 'object') return <></>
         return (
           <div className="mt-3">
             <UIResourceRenderer resource={uiResource} />
@@ -114,7 +113,7 @@ export default function AssistantPage() {
       render: ({ status, result }) => {
         if (status !== 'complete') return <div className="mt-3 text-sm text-muted-foreground">Opening Reports…</div>
         const uiResource = (result as any)?.uiResource
-        if (!uiResource || typeof uiResource !== 'object') return null
+        if (!uiResource || typeof uiResource !== 'object') return <></>
         return (
           <div className="mt-3">
             <UIResourceRenderer resource={uiResource} />
@@ -145,7 +144,7 @@ export default function AssistantPage() {
       render: ({ status, result }) => {
         if (status !== 'complete') return <div className="mt-3 text-sm text-muted-foreground">Opening Projects…</div>
         const uiResource = (result as any)?.uiResource
-        if (!uiResource || typeof uiResource !== 'object') return null
+        if (!uiResource || typeof uiResource !== 'object') return <></>
         return (
           <div className="mt-3">
             <UIResourceRenderer resource={uiResource} />
@@ -191,7 +190,7 @@ export default function AssistantPage() {
           )
         }
         const uiResource = (result as any)?.uiResource
-        if (!uiResource || typeof uiResource !== 'object') return null
+        if (!uiResource || typeof uiResource !== 'object') return <></>
         return (
           <div className="mt-3">
             <UIResourceRenderer resource={uiResource} />
