@@ -15,8 +15,9 @@ function getServiceAdapter() {
 const handler = copilotRuntimeNextJSAppRouterEndpoint({
   runtime: copilotRuntime,
   serviceAdapter: getServiceAdapter(),
+  endpoint: '/api/copilotkit',
 })
 
 export async function POST(req: Request) {
-  return handler(req as any)
+  return handler.handleRequest(req)
 }
