@@ -1,397 +1,221 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { toast } from 'sonner'
+import { useMemo } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
+import { CopilotChat } from '@copilotkit/react-ui'
+import { useFrontendTool } from '@copilotkit/react-core'
 import { UIResourceRenderer } from '@mcp-ui/client'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, User } from 'lucide-react'
-
-import {
-  ChatHandler,
-  ChatInput,
-  ChatMessage,
-  ChatMessages,
-  ChatSection,
-  Message as UiMessage,
-  TextPartType,
-  useChatUI,
-  usePart,
-} from '@llamaindex/chat-ui'
-
-import '@llamaindex/chat-ui/styles/markdown.css'
-import '@llamaindex/chat-ui/styles/pdf.css'
-import '@llamaindex/chat-ui/styles/editor.css'
-
-interface ChatSession {
-  id: number
-  title: string | null
-  created_at: string
-  updated_at: string
-  last_message_at: string | null
-}
-
-interface ChatMessage {
-  id: number
-  session_id: number
-  role: 'user' | 'assistant' | 'system' | 'tool'
-  content: string
-  created_at: string
-  metadata?: any
-}
-
-type McpUiPart = {
-  type: 'data-mcp_ui'
-  data: any
-}
-
-type ReasoningPart = {
-  type: 'data-reasoning'
-  data: string
-}
-
-function splitThinkBlocks(input: string): { visible: string; reasoning: string } {
-  if (!input) return { visible: '', reasoning: '' }
-  const re = /<think>([\s\S]*?)<\/think>/gi
-  let reasoning = ''
-  let match: RegExpExecArray | null
-
-  while ((match = re.exec(input))) {
-    const chunk = (match[1] || '').trim()
-    if (chunk) reasoning += (reasoning ? '\n\n' : '') + chunk
-  }
-
-  const visible = input.replace(re, '').trimEnd()
-  return { visible, reasoning }
-}
-
-function McpUiPartUI() {
-  const part = usePart<McpUiPart>('data-mcp_ui')
-  const resource = part?.data
-  if (!resource || typeof resource !== 'object') return null
-  return (
-    <div className="mt-3">
-      <UIResourceRenderer resource={resource} />
-    </div>
-  )
-}
-
-function ChatAvatar({ role }: { role: string }) {
-  const isUser = role === 'user'
-  return (
-    <div
-      className={
-        isUser
-          ? 'flex h-9 w-9 items-center justify-center rounded-full border bg-background'
-          : 'flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground'
-      }
-    >
-      {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-    </div>
-  )
-}
-
-function ReasoningPartUI() {
-  const part = usePart<ReasoningPart>('data-reasoning')
-  const text = typeof part?.data === 'string' ? part.data : ''
-  if (!text.trim()) return null
-  return (
-    <details className="mb-2 inline-block w-fit max-w-[36rem] rounded-md border bg-muted/30 p-3 text-sm">
-      <summary className="cursor-pointer select-none font-medium">Reasoning</summary>
-      <div className="mt-2 whitespace-pre-wrap text-muted-foreground">{text}</div>
-    </details>
-  )
-}
-
-function ChatMessagesListWithMcp() {
-  const scrollableRef = useRef<HTMLDivElement | null>(null)
-  const { messages } = useChatUI()
-
-  useEffect(() => {
-    if (!scrollableRef.current) return
-    scrollableRef.current.scrollTop = scrollableRef.current.scrollHeight
-  }, [messages.length, messages[messages.length - 1]?.parts?.[0]])
-
-  return (
-    <div ref={scrollableRef} className="flex min-h-0 flex-1 flex-col gap-5 overflow-auto px-3 py-4 md:px-6">
-      <AnimatePresence initial={false}>
-        {messages.map((message, idx) => (
-          <motion.div
-            key={message.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className={message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}
-          >
-            <ChatMessage
-              message={message}
-              isLast={idx === messages.length - 1}
-              className={message.role === 'user' ? 'max-w-[48rem] flex-row-reverse items-start' : 'max-w-[48rem] items-start'}
-            >
-              <ChatMessage.Avatar>
-                <ChatAvatar role={message.role} />
-              </ChatMessage.Avatar>
-              <ChatMessage.Content className={message.role === 'user' ? 'rounded-lg bg-muted/60 p-3' : 'rounded-lg bg-background p-3'}>
-                <ChatMessage.Part.File />
-                <ChatMessage.Part.Event />
-                <ReasoningPartUI />
-                <ChatMessage.Part.Markdown />
-                <McpUiPartUI />
-                <ChatMessage.Part.Artifact />
-                <ChatMessage.Part.Source />
-                <ChatMessage.Part.Suggestion />
-              </ChatMessage.Content>
-              <ChatMessage.Actions />
-            </ChatMessage>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-      <ChatMessages.Empty />
-      <ChatMessages.Loading />
-    </div>
-  )
-}
 
 export default function AssistantPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  useFrontendTool(
+    {
+      name: 'mcp_tool',
+      description:
+        'Call any MCP worker tool by name. Use this for non-UI tools too. If the result includes an MCP-UI resource, it will be rendered.',
+      parameters: [
+        { name: 'toolName', type: 'string', required: true },
+        { name: 'toolArgs', type: 'object', required: false },
+      ],
+      handler: async (args) => {
+        const toolName = String((args as any)?.toolName ?? '').trim()
+        const toolArgsRaw = (args as any)?.toolArgs
+        const toolArgs =
+          toolArgsRaw && typeof toolArgsRaw === 'object' && !Array.isArray(toolArgsRaw) ? toolArgsRaw : {}
 
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [loadingMessages, setLoadingMessages] = useState(false)
-  const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
-
-  const abortControllerRef = useRef<AbortController | null>(null)
-
-  const activeSessionId = useMemo(() => {
-    const raw = searchParams.get('session_id')
-    if (!raw) return null
-    const id = parseInt(raw, 10)
-    return Number.isFinite(id) ? id : null
-  }, [searchParams])
-
-  const loadMessages = async (sessionId: number) => {
-    setLoadingMessages(true)
-    try {
-      const res = await fetch(`/api/v1/assistant-chat-messages?session_id=${sessionId}&limit=500`)
-      const data = await res.json()
-
-      if (data.status !== 'success') {
-        toast.error(data.message || 'Failed to load messages')
-        setMessages([])
-        return
-      }
-
-      setMessages((data.messages as ChatMessage[]) ?? [])
-    } catch {
-      toast.error('Failed to load messages')
-    } finally {
-      setLoadingMessages(false)
-    }
-  }
-
-  const ensureDefaultSession = async () => {
-    if (activeSessionId) return
-    try {
-      const res = await fetch('/api/v1/assistant-chat-sessions?limit=50')
-      const data = await res.json().catch(() => null)
-      if (!data || data.status !== 'success') return
-
-      const sessions = (data.sessions as ChatSession[]) ?? []
-      const first = sessions[0]?.id
-      if (first) {
-        router.replace(`/assistant?session_id=${first}`)
-      }
-    } catch {
-      return
-    }
-  }
-
-  const handler: ChatHandler = useMemo(() => {
-    const uiMessages: UiMessage[] = messages.map((m) => {
-      const role: 'system' | 'user' | 'assistant' =
-        m.role === 'user' ? 'user' : m.role === 'system' ? 'system' : 'assistant'
-
-      const { visible: visibleText, reasoning: parsedReasoning } = splitThinkBlocks(m.content ?? '')
-      const parts: any[] = [{ type: TextPartType, text: visibleText }]
-
-      const savedReasoning = typeof m?.metadata?.reasoning === 'string' ? m.metadata.reasoning : ''
-      const reasoningText = savedReasoning || parsedReasoning
-      if (reasoningText && reasoningText.trim()) {
-        parts.push({ type: 'data-reasoning', data: reasoningText })
-      }
-
-      const uiResource = m?.metadata?.uiResource
-      if (uiResource && typeof uiResource === 'object') {
-        parts.push({ type: 'data-mcp_ui', data: uiResource })
-      }
-
-      return { id: String(m.id), role, parts }
-    })
-
-    const sendMessage: ChatHandler['sendMessage'] = async (msg) => {
-      if (!activeSessionId) {
-        toast.error('Create or select a conversation first')
-        return
-      }
-
-      const content = msg.parts
-        .filter((p: any) => p?.type === TextPartType)
-        .map((p: any) => p.text)
-        .join('')
-        .trim()
-
-      if (!content) return
-
-      abortControllerRef.current?.abort()
-      const controller = new AbortController()
-      abortControllerRef.current = controller
-
-      setStatus('submitted')
-
-      const optimisticUser: ChatMessage = {
-        id: -Date.now(),
-        session_id: activeSessionId,
-        role: 'user',
-        content,
-        created_at: new Date().toISOString(),
-      }
-
-      const optimisticAssistant: ChatMessage = {
-        id: -Date.now() - 1,
-        session_id: activeSessionId,
-        role: 'assistant',
-        content: '',
-        created_at: new Date().toISOString(),
-      }
-
-      setMessages((prev) => [...prev, optimisticUser, optimisticAssistant])
-
-      try {
-        const insertRes = await fetch('/api/v1/assistant-chat-messages', {
+        const res = await fetch('/api/assistant-mcp-ui', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            session_id: activeSessionId,
-            role: 'user',
-            content,
-          }),
+          body: JSON.stringify({ toolName, toolArgs }),
         })
-
-        const insertData = await insertRes.json().catch(() => null)
-        if (!insertRes.ok || !insertData || insertData.status !== 'success') {
-          toast.error(insertData?.message || 'Failed to send message')
-          setStatus('error')
-          await loadMessages(activeSessionId)
-          return
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json || json.status !== 'success') {
+          throw new Error(json?.message || `Failed to call MCP tool: ${toolName}`)
         }
-
-        setStatus('streaming')
-
-        const streamRes = await fetch('/api/v1/assistant-chat-generate-stream', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ session_id: activeSessionId }),
-          signal: controller.signal,
-        })
-
-        if (!streamRes.ok) {
-          const err = await streamRes.json().catch(() => null)
-          toast.error(err?.message || 'Failed to generate assistant reply')
-          setStatus('error')
-          await loadMessages(activeSessionId)
-          return
-        }
-
-        if (!streamRes.body) {
-          toast.error('Streaming response not available')
-          setStatus('error')
-          await loadMessages(activeSessionId)
-          return
-        }
-
-        const reader = streamRes.body.getReader()
-        const decoder = new TextDecoder()
-        let full = ''
-
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value, { stream: true })
-          if (!chunk) continue
-          full += chunk
-          setMessages((prev) => {
-            const next = [...prev]
-            for (let i = next.length - 1; i >= 0; i--) {
-              if (next[i]?.role === 'assistant' && next[i].id === optimisticAssistant.id) {
-                next[i] = { ...next[i], content: full }
-                break
-              }
-            }
-            return next
-          })
-        }
-
-        setStatus('ready')
-        await loadMessages(activeSessionId)
-      } catch (e: any) {
-        if (e?.name === 'AbortError') {
-          setStatus('ready')
-          await loadMessages(activeSessionId)
-          return
-        }
-        toast.error('Failed to send message')
-        setStatus('error')
-        await loadMessages(activeSessionId)
-      }
-    }
-
-    return {
-      messages: uiMessages,
-      status,
-      sendMessage,
-      stop: async () => {
-        abortControllerRef.current?.abort()
+        return { toolResult: json.toolResult ?? null, uiResource: json.uiResource ?? null }
       },
-    }
-  }, [activeSessionId, messages, status])
+      render: ({ status, args, result }) => {
+        const toolName = (args as any)?.toolName
 
-  useEffect(() => {
-    void ensureDefaultSession()
-  }, [])
+        if (status !== 'complete') {
+          return (
+            <div className="mt-3 text-sm text-muted-foreground">Calling MCP tool{toolName ? `: ${toolName}` : ''}…</div>
+          )
+        }
 
-  useEffect(() => {
-    if (!activeSessionId) {
-      setMessages([])
-      return
-    }
+        const uiResource = (result as any)?.uiResource
+        if (uiResource && typeof uiResource === 'object') {
+          return (
+            <div className="mt-3">
+              <UIResourceRenderer resource={uiResource} />
+            </div>
+          )
+        }
 
-    loadMessages(activeSessionId)
-  }, [activeSessionId])
+        const toolResult = (result as any)?.toolResult
+        return (
+          <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs">
+            <div className="mb-2 font-medium">MCP Result{toolName ? `: ${toolName}` : ''}</div>
+            <pre className="whitespace-pre-wrap break-words">{JSON.stringify(toolResult, null, 2)}</pre>
+          </div>
+        )
+      },
+    },
+    [],
+  )
+
+  useFrontendTool(
+    {
+      name: 'show_dashboard',
+      description: 'Open the Flame dashboard UI.',
+      parameters: [],
+      handler: async () => {
+        const res = await fetch('/api/assistant-mcp-ui', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ toolName: 'show_dashboard', toolArgs: {} }),
+        })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json || json.status !== 'success') {
+          throw new Error(json?.message || 'Failed to open dashboard')
+        }
+        return { uiResource: json.uiResource ?? null }
+      },
+      render: ({ status, result }) => {
+        if (status !== 'complete') return <div className="mt-3 text-sm text-muted-foreground">Opening Dashboard…</div>
+        const uiResource = (result as any)?.uiResource
+        if (!uiResource || typeof uiResource !== 'object') return null
+        return (
+          <div className="mt-3">
+            <UIResourceRenderer resource={uiResource} />
+          </div>
+        )
+      },
+    },
+    [],
+  )
+
+  useFrontendTool(
+    {
+      name: 'show_reports',
+      description: 'Open the Flame reports UI.',
+      parameters: [],
+      handler: async () => {
+        const res = await fetch('/api/assistant-mcp-ui', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ toolName: 'show_reports', toolArgs: {} }),
+        })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json || json.status !== 'success') {
+          throw new Error(json?.message || 'Failed to open reports')
+        }
+        return { uiResource: json.uiResource ?? null }
+      },
+      render: ({ status, result }) => {
+        if (status !== 'complete') return <div className="mt-3 text-sm text-muted-foreground">Opening Reports…</div>
+        const uiResource = (result as any)?.uiResource
+        if (!uiResource || typeof uiResource !== 'object') return null
+        return (
+          <div className="mt-3">
+            <UIResourceRenderer resource={uiResource} />
+          </div>
+        )
+      },
+    },
+    [],
+  )
+
+  useFrontendTool(
+    {
+      name: 'show_projects',
+      description: 'Open the Flame projects UI.',
+      parameters: [],
+      handler: async () => {
+        const res = await fetch('/api/assistant-mcp-ui', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ toolName: 'show_projects', toolArgs: {} }),
+        })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json || json.status !== 'success') {
+          throw new Error(json?.message || 'Failed to open projects')
+        }
+        return { uiResource: json.uiResource ?? null }
+      },
+      render: ({ status, result }) => {
+        if (status !== 'complete') return <div className="mt-3 text-sm text-muted-foreground">Opening Projects…</div>
+        const uiResource = (result as any)?.uiResource
+        if (!uiResource || typeof uiResource !== 'object') return null
+        return (
+          <div className="mt-3">
+            <UIResourceRenderer resource={uiResource} />
+          </div>
+        )
+      },
+    },
+    [],
+  )
+
+  useFrontendTool(
+    {
+      name: 'show_expenses',
+      description: 'Open the Flame expenses UI (optionally filtered by projectId/cycleId).',
+      parameters: [
+        { name: 'projectId', type: 'string', required: false },
+        { name: 'cycleId', type: 'string', required: false },
+      ],
+      handler: async (args) => {
+        const toolArgs: Record<string, unknown> = {}
+        if (args?.projectId) toolArgs.projectId = args.projectId
+        if (args?.cycleId) toolArgs.cycleId = args.cycleId
+
+        const res = await fetch('/api/assistant-mcp-ui', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ toolName: 'show_expenses', toolArgs }),
+        })
+        const json = await res.json().catch(() => null)
+        if (!res.ok || !json || json.status !== 'success') {
+          throw new Error(json?.message || 'Failed to open expenses')
+        }
+        return { uiResource: json.uiResource ?? null }
+      },
+      render: ({ status, args, result }) => {
+        if (status !== 'complete') {
+          const suffix =
+            args?.projectId || args?.cycleId
+              ? ` (projectId=${args?.projectId ?? '-'}, cycleId=${args?.cycleId ?? '-'})`
+              : ''
+          return (
+            <div className="mt-3 text-sm text-muted-foreground">Opening Expenses{suffix}…</div>
+          )
+        }
+        const uiResource = (result as any)?.uiResource
+        if (!uiResource || typeof uiResource !== 'object') return null
+        return (
+          <div className="mt-3">
+            <UIResourceRenderer resource={uiResource} />
+          </div>
+        )
+      },
+    },
+    [],
+  )
 
   return (
     <AuthGuard>
       <div className="p-6">
-        {loadingMessages ? (
-          <div className="text-sm text-muted-foreground">Loading...</div>
-        ) : !activeSessionId ? (
-          <div className="text-sm text-muted-foreground">Select a conversation or create a new one.</div>
-        ) : (
-          <div className="h-[70vh] overflow-hidden rounded-lg border bg-background">
-            <ChatSection handler={handler} className="h-full">
-              <ChatMessages>
-                <ChatMessagesListWithMcp />
-              </ChatMessages>
-              <ChatInput>
-                <ChatInput.Form className="w-full">
-                  <ChatInput.Field placeholder="Type a message..." />
-                  <ChatInput.Submit />
-                </ChatInput.Form>
-              </ChatInput>
-            </ChatSection>
-          </div>
-        )}
+        <div className="h-[70vh] overflow-hidden rounded-lg border bg-background">
+          <CopilotChat
+            instructions={
+              'You are Flame, an assistant for a sales & expense tracking app. Help the user navigate projects, cycles, sales, expenses, invoices, and reports. When useful, you may call tools to show dashboards, reports, projects, and expenses.'
+            }
+            labels={{
+              title: 'Flame Assistant',
+              initial: 'Hi! How can I help you today?',
+            }}
+          />
+        </div>
       </div>
     </AuthGuard>
   )
