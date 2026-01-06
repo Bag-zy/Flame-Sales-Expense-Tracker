@@ -41,6 +41,12 @@ export function middleware(request: NextRequest) {
   // For versioned API requests, rewrite /api/v1/* -> /api/* so existing
   // route files in app/api/** continue to handle the logic.
   if (pathname.startsWith('/api/v1/')) {
+    // CopilotKit is exposed as a dedicated versioned route under /api/v1/copilotkit.
+    // Let that route handle requests directly instead of rewriting.
+    if (pathname.startsWith('/api/v1/copilotkit')) {
+      return NextResponse.next()
+    }
+
     const url = request.nextUrl.clone()
     url.pathname = pathname.replace(/^\/api\/v1/, '/api')
     return NextResponse.rewrite(url)
