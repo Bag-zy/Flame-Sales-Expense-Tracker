@@ -1,11 +1,15 @@
-import { CopilotRuntime, copilotRuntimeNextJSAppRouterEndpoint } from '@copilotkit/runtime'
+import { CopilotRuntime, EmptyAdapter, copilotRuntimeNextJSAppRouterEndpoint } from '@copilotkit/runtime'
 import { BuiltInAgent } from '@copilotkitnext/agent'
 
-if (!process.env.GOOGLE_API_KEY && process.env.GEMINI_API_KEY) {
-  process.env.GOOGLE_API_KEY = process.env.GEMINI_API_KEY
+if (!process.env.OPENAI_API_KEY && process.env.GROQ_API_KEY) {
+  process.env.OPENAI_API_KEY = process.env.GROQ_API_KEY
 }
 
-const model = (process.env.GEMINI_MODEL || '').trim() || 'gemini-2.5-flash'
+if (!process.env.OPENAI_BASE_URL) {
+  process.env.OPENAI_BASE_URL = 'https://api.groq.com/openai/v1'
+}
+
+const model = (process.env.GROQ_MODEL || '').trim() || 'llama-3.3-70b-versatile'
 
 const flamePrompt =
   'You are Flame, an assistant for the Flame Sales & Expense Tracker.\n' +
@@ -16,7 +20,7 @@ const flamePrompt =
   'Be concise and action-oriented.'
 
 const flameAgent = new BuiltInAgent({
-  model: `google/${model}`,
+  model: `openai/${model}`,
   prompt: flamePrompt,
   maxSteps: 5,
 })
@@ -30,5 +34,6 @@ const copilotRuntime = new CopilotRuntime({
 
 export const copilotkitHandler = copilotRuntimeNextJSAppRouterEndpoint({
   runtime: copilotRuntime,
+  serviceAdapter: new EmptyAdapter(),
   endpoint: '/api/copilotkit',
 })
