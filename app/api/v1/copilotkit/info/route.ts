@@ -9,7 +9,18 @@ function rewriteToNonV1(req: Request) {
     url.pathname = url.pathname.replace('/api/v1/copilotkit', '/api/copilotkit')
   }
 
-  return new Request(url.toString(), req)
+  const headers = new Headers(req.headers)
+  const accept = headers.get('accept') || ''
+  const hasJson = accept.toLowerCase().includes('application/json')
+  const hasSse = accept.toLowerCase().includes('text/event-stream')
+  if (!hasJson || !hasSse) {
+    headers.set('accept', 'text/event-stream, application/json')
+  }
+
+  return new Request(url.toString(), {
+    method: req.method,
+    headers,
+  })
 }
 
 export async function GET(req: Request) {
