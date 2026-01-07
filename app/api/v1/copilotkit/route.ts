@@ -20,11 +20,18 @@ function rewriteToNonV1(req: Request) {
   const method = req.method.toUpperCase()
   const body = method === 'GET' || method === 'HEAD' ? undefined : req.clone().body
 
-  return new Request(url.toString(), {
+  const init: RequestInit & { duplex?: 'half' } = {
     method: req.method,
     headers,
     body,
-  })
+  }
+
+  // Node.js (undici) requires duplex when sending a streaming body.
+  if (body) {
+    ;(init as any).duplex = 'half'
+  }
+
+  return new Request(url.toString(), init)
 }
 
 export async function GET(req: Request) {
