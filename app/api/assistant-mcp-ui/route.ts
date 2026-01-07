@@ -141,6 +141,34 @@ async function getOrCreateAssistantMcpApiKey(opts: {
 type JsonRpcSuccess = { jsonrpc: '2.0'; id: string | number; result: any }
 type JsonRpcError = { jsonrpc: '2.0'; id?: string | number | null; error: any }
 
+async function parseJsonRpcFromResponse(res: Response): Promise<JsonRpcSuccess | JsonRpcError | null> {
+  const contentType = res.headers.get('content-type') || ''
+
+  if (contentType.includes('text/event-stream')) {
+    const text = await res.text().catch(() => '')
+    const dataLines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('data:'))
+      .map((l) => l.replace(/^data:\s*/, '').trim())
+      .filter(Boolean)
+
+    for (const data of dataLines) {
+      try {
+        const parsed = JSON.parse(data)
+        if (parsed && typeof parsed === 'object' && (parsed as any).jsonrpc === '2.0') {
+          return parsed as any
+        }
+      } catch {
+      }
+    }
+
+    return null
+  }
+
+  return (await res.json().catch(() => null)) as JsonRpcSuccess | JsonRpcError | null
+}
+
 async function callMcpTool(opts: {
   baseUrl: string
   toolName: string
@@ -151,6 +179,7 @@ async function callMcpTool(opts: {
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
+    accept: 'text/event-stream, application/json',
   }
 
   if (opts.authHeader) {
@@ -172,13 +201,32 @@ async function callMcpTool(opts: {
     }),
   })
 
-  const initJson = (await initRes.json().catch(() => null)) as JsonRpcSuccess | JsonRpcError | null
+  const initJson = await parseJsonRpcFromResponse(initRes)
   if (!initRes.ok || !initJson || 'error' in initJson) {
-    const msg = (initJson as any)?.error?.message || 'Failed to initialize MCP session'
+    const msg = (initJson as any)?.error?.message || `Failed to initialize MCP session (HTTP ${initRes.status})`
     throw new Error(msg)
   }
 
   const sessionId = initRes.headers.get('mcp-session-id')
+
+  if (sessionId) {
+    const notifyHeaders: Record<string, string> = { ...headers, 'mcp-session-id': sessionId }
+    const notifyRes = await fetch(mcpUrl.toString(), {
+      method: 'POST',
+      headers: notifyHeaders,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'notifications/initialized',
+      }),
+    })
+
+    if (!notifyRes.ok) {
+      const notifyJson = await parseJsonRpcFromResponse(notifyRes)
+      const msg =
+        (notifyJson as any)?.error?.message || `Failed to send notifications/initialized (HTTP ${notifyRes.status})`
+      throw new Error(msg)
+    }
+  }
 
   const callHeaders: Record<string, string> = { ...headers }
   if (sessionId) callHeaders['mcp-session-id'] = sessionId
@@ -197,9 +245,9 @@ async function callMcpTool(opts: {
     }),
   })
 
-  const toolJson = (await toolRes.json().catch(() => null)) as JsonRpcSuccess | JsonRpcError | null
+  const toolJson = await parseJsonRpcFromResponse(toolRes)
   if (!toolRes.ok || !toolJson || 'error' in toolJson) {
-    const msg = (toolJson as any)?.error?.message || 'MCP tool call failed'
+    const msg = (toolJson as any)?.error?.message || `MCP tool call failed (HTTP ${toolRes.status})`
     throw new Error(msg)
   }
 
@@ -270,6 +318,7 @@ export async function POST(request: NextRequest) {
       uiResource,
     })
   } catch (error: unknown) {
+    console.error('assistant-mcp-ui error:', error)
     const message = error instanceof Error ? error.message : 'An unknown error occurred'
     return NextResponse.json({ status: 'error', message }, { status: 500 })
   }

@@ -14,6 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const user = useUser()
   const isDocsRoute = pathname.startsWith('/docs')
   const isLandingRoute = pathname === '/'
+  const isAssistantRoute = pathname.startsWith('/assistant')
 
   if (isDocsRoute) {
     return <>{children}</>
@@ -34,13 +35,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <Suspense fallback={null}>
       <SidebarProvider>
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className={isAssistantRoute ? 'm-0 rounded-none shadow-none' : undefined}>
           <div className="min-h-screen bg-background">
             <FilterProvider>
-              <Navigation />
-              <main className="w-full px-4 py-6">
-                {children}
-              </main>
+              {!isAssistantRoute && <Navigation />}
+              <main className={isAssistantRoute ? 'h-[100dvh] w-full' : 'w-full px-4 py-6'}>{children}</main>
             </FilterProvider>
             <Toaster />
           </div>

@@ -2,7 +2,7 @@ import { copilotkitHandler } from '../../copilotkit/_handler'
 
 export const runtime = 'nodejs'
 
-function rewriteToNonV1(req: Request) {
+async function rewriteToNonV1(req: Request) {
   const url = new URL(req.url)
 
   if (url.pathname.startsWith('/api/v1/copilotkit')) {
@@ -18,26 +18,19 @@ function rewriteToNonV1(req: Request) {
   }
 
   const method = req.method.toUpperCase()
-  const body = method === 'GET' || method === 'HEAD' ? undefined : req.clone().body
+  const bodyText = method === 'GET' || method === 'HEAD' ? undefined : await req.text()
 
-  const init: RequestInit & { duplex?: 'half' } = {
+  return new Request(url.toString(), {
     method: req.method,
     headers,
-    body,
-  }
-
-  // Node.js (undici) requires duplex when sending a streaming body.
-  if (body) {
-    ;(init as any).duplex = 'half'
-  }
-
-  return new Request(url.toString(), init)
+    body: bodyText,
+  })
 }
 
 export async function GET(req: Request) {
-  return copilotkitHandler.handleRequest(rewriteToNonV1(req))
+  return copilotkitHandler.handleRequest(await rewriteToNonV1(req))
 }
 
 export async function POST(req: Request) {
-  return copilotkitHandler.handleRequest(rewriteToNonV1(req))
+  return copilotkitHandler.handleRequest(await rewriteToNonV1(req))
 }
