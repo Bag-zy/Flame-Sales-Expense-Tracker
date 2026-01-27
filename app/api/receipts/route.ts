@@ -76,6 +76,8 @@ export async function GET(request: NextRequest) {
     const { organizationId } = user;
 
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const expenseId = searchParams.get('expense_id');
     const projectId = searchParams.get('project_id');
     const cycleId = searchParams.get('cycle_id');
     const search = searchParams.get('search');
@@ -126,6 +128,18 @@ export async function GET(request: NextRequest) {
       params.push(projectId);
     }
 
+    if (expenseId) {
+      paramIndex += 1;
+      query += ` AND r.expense_id = $${paramIndex}`;
+      params.push(expenseId);
+    }
+
+    if (id) {
+      paramIndex += 1;
+      query += ` AND r.id = $${paramIndex}`;
+      params.push(id);
+    }
+
     if (cycleId) {
       paramIndex += 1;
       query += ` AND e.cycle_id = $${paramIndex}`;
@@ -138,7 +152,11 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`);
     }
 
-    query += ' ORDER BY r.upload_date DESC';
+    if (id) {
+      query += ' LIMIT 1';
+    } else {
+      query += ' ORDER BY r.upload_date DESC';
+    }
 
     const result = await db.query(query, params);
 

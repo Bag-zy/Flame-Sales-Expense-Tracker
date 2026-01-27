@@ -219,6 +219,7 @@ export async function GET(request: Request) {
     const { organizationId } = user
     
     const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
     const projectId = searchParams.get('project_id')
     const cycleId = searchParams.get('cycle_id')
     const search = searchParams.get('search')
@@ -258,6 +259,12 @@ export async function GET(request: Request) {
       params.push(user.id)
     }
     
+    if (id) {
+      paramCount++
+      query += ` AND id = $${paramCount}`
+      params.push(id)
+    }
+    
     if (projectId) {
       paramCount++
       query += ` AND project_id = $${paramCount}`
@@ -276,8 +283,12 @@ export async function GET(request: Request) {
       params.push(`%${search}%`)
     }
     
-    query += ` ORDER BY date_time_created DESC LIMIT $${paramCount + 1}`
-    params.push(parseInt(limit))
+    if (id) {
+      query += ' LIMIT 1'
+    } else {
+      query += ` ORDER BY date_time_created DESC LIMIT $${paramCount + 1}`
+      params.push(parseInt(limit))
+    }
     
     const result = await db.query(query, params)
     return NextResponse.json({ 

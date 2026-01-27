@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Eye, Image as ImageIcon, Scan, Search as SearchIcon } from 'lucide-react';
 import { useFilter } from '@/lib/context/filter-context';
@@ -30,6 +31,7 @@ interface Receipt {
 }
 
 function ReceiptsPageContent() {
+  const router = useRouter();
   const { selectedProject, selectedCycle } = useFilter();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,6 +140,9 @@ function ReceiptsPageContent() {
                   </div>
                 </CardContent>
                 <CardFooter className="px-4 pb-4 pt-0 flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => router.push(`/receipts/${receipt.id}`)}>
+                    Details
+                  </Button>
                   {receipt.file_path && (
                     <Button size="sm" variant="outline" onClick={() => handleViewImage(receipt)}>
                       <Eye className="w-4 h-4 mr-2" />

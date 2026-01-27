@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Trash2, Edit, Plus, Search } from 'lucide-react';
 import { useFilter } from '@/lib/context/filter-context';
 import { AuthGuard } from '@/components/auth-guard';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -78,6 +80,7 @@ interface ReportSummary {
 }
 
 function ExpensesPageContent() {
+  const router = useRouter();
   const { selectedProject, selectedCycle, projects, cycles: globalCycles, setSelectedProject, setSelectedCycle, currentCurrencyCode } = useFilter();
   const searchParams = useSearchParams();
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -456,6 +459,13 @@ function ExpensesPageContent() {
                     </td>
                     <td className="px-4 py-2 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/expenses/${expense.id}`)}
+                          className="text-foreground hover:text-foreground/80"
+                        >
+                          View
+                        </button>
                         <button onClick={() => handleEdit(expense)} className="text-blue-600 hover:text-blue-800">
                           <Edit className="w-4 h-4" />
                         </button>
