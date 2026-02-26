@@ -104,13 +104,12 @@ export function getProjectCategoryIdByName(
 
   return (projectCategories || []).find((pc) => {
     const candidate = normalizeCategoryName(pc.category_name)
-    // Allow labels like "COGS (Cost of Goods Sold)" or "EXPENSES (Operating Expenses)"
+    // Allow labels like "COGS (Cost of Goods Sold)", "Inventory", or "EXPENSES (Operating Expenses)"
     // to match the short keys used by the calculations.
     return (
       candidate === target ||
-      candidate.startsWith(`${target} `) ||
-      candidate.startsWith(`${target}(`) ||
-      candidate.includes(target)
+      (target === 'cogs' && (candidate.includes('cost of goods sold') || candidate === 'inventory')) ||
+      (target === 'operating expenses' && candidate.includes('operating expenses'))
     )
   })?.id
 }
@@ -134,17 +133,17 @@ export function calcExpenseTotalsByProjectCategory(
   for (const e of expenses || []) {
     const amt = toNumber(e.amount)
     if (!amt) continue
-    const catId = e.category_id ?? null
-    if (!catId) continue
 
-    const cat = categoryById.get(Number(catId))
+    const categoryId = e.category_id ? Number(e.category_id) : null
+    if (!categoryId) continue
+
+    const cat = categoryById.get(categoryId)
     if (!cat) continue
 
     const pcId = cat.project_category_id ?? null
     if (cogsProjectCategoryId && pcId === cogsProjectCategoryId) {
       totalCogs += amt
-    }
-    if (operatingExpensesProjectCategoryId && pcId === operatingExpensesProjectCategoryId) {
+    } else if (operatingExpensesProjectCategoryId && pcId === operatingExpensesProjectCategoryId) {
       totalOperatingExpenses += amt
     }
   }

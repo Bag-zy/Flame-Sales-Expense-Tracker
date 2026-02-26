@@ -126,6 +126,32 @@ export async function POST(request: NextRequest) {
     }
 
     const safeUnitCost = typeof unit_cost === 'number' ? unit_cost : parseFloat(unit_cost || '0') || 0
+
+    // Auto-detect opening stock: check if this is the first movement for this variant in this cycle
+    let transactionType = String(type || '').toUpperCase()
+    let isOpeningBalance = false
+
+    if (safeApplyStock && safeQty > 0 && variant_id && cycle_id) {
+      const existingBalance = await db.query(
+        `SELECT quantity_on_hand 
+          FROM inventory_balances 
+          WHERE organization_id = $1 
+            AND project_id = $2 
+            AND cycle_id = $3 
+            AND inventory_item_variant_id = $4
+          LIMIT 1`,
+        [organizationId, project_id || null, cycle_id, variant_id]
+      )
+
+      const hasExistingBalance = existingBalance.rows.length > 0 &&
+        Number(existingBalance.rows[0].quantity_on_hand || 0) > 0
+
+      if (!hasExistingBalance && (transactionType === 'PURCHASE' || transactionType === 'ADJUSTMENT_IN')) {
+        isOpeningBalance = true
+        transactionType = 'OPENING_BALANCE'
+      }
+    }
+
     const safeUpdateVariantUnitCost =
       typeof update_variant_unit_cost === 'number'
         ? update_variant_unit_cost
@@ -161,7 +187,7 @@ export async function POST(request: NextRequest) {
       ? await computeAmountInOrgCurrency(organizationId, project_id || null, amount)
       : 0
 
-    const normalizedType = String(type || '').toUpperCase()
+    const normalizedType = transactionType
     const quantityDelta = safeApplyStock
       ? (normalizedType === 'PURCHASE' || normalizedType === 'ADJUSTMENT_IN' || normalizedType === 'OPENING_BALANCE' ? safeQty : -safeQty)
       : 0
@@ -169,6 +195,24 @@ export async function POST(request: NextRequest) {
     const safeExpenseId = expense_id === undefined || expense_id === null
       ? null
       : (typeof expense_id === 'number' ? expense_id : parseInt(expense_id || '0', 10) || null)
+
+    // Resolve inventory identifiers from product/variant to ensure expense compatibility
+    let resolvedInventoryItemId: number | null = null
+    let resolvedInventoryItemVariantId: number | null = null
+
+    if (product_id) {
+      const prodRes = await db.query('SELECT inventory_item_id FROM products WHERE id = $1', [product_id])
+      if (prodRes.rows.length > 0) {
+        resolvedInventoryItemId = prodRes.rows[0].inventory_item_id
+      }
+    }
+
+    if (variant_id) {
+      const varRes = await db.query('SELECT inventory_item_variant_id FROM product_variants WHERE id = $1', [variant_id])
+      if (varRes.rows.length > 0) {
+        resolvedInventoryItemVariantId = varRes.rows[0].inventory_item_variant_id
+      }
+    }
 
     const result = await db.query(
       `
@@ -189,7 +233,9 @@ export async function POST(request: NextRequest) {
           product_id,
           variant_id,
           inventory_quantity,
-          inventory_unit_cost
+          inventory_unit_cost,
+          inventory_item_id,
+          inventory_item_variant_id
         )
         SELECT
           $1::int,
@@ -207,7 +253,9 @@ export async function POST(request: NextRequest) {
           $13::int,
           $14::int,
           $15::int,
-          $16::numeric
+          $16::numeric,
+          $24::int,
+          $25::int
         WHERE $17::boolean = true
         RETURNING id
       ),
@@ -285,27 +333,30 @@ export async function POST(request: NextRequest) {
         safeQty,
         safeUnitCost || null,
         Boolean(create_expense),
-        type,
+        transactionType,
         quantityDelta,
         safeUpdateVariantUnitCost,
         safeUpdateVariantSellingPrice,
         safeExpenseId,
         safeApplyStock,
+        resolvedInventoryItemId,
+        resolvedInventoryItemVariantId,
       ],
     )
 
     const row = result.rows[0] || {}
 
     if (safeApplyStock && safeCycleId && project_id && product_id) {
-      const normalizedType = String(type || '').toUpperCase()
+      const normalizedTypeForV2 = transactionType
       const v2Type =
-        normalizedType === 'PURCHASE'
+        normalizedTypeForV2 === 'PURCHASE'
           ? 'PURCHASE_RECEIPT'
-          : (normalizedType === 'SALE'
+          : (normalizedTypeForV2 === 'SALE'
             ? 'SALE_ISSUE'
-            : (normalizedType === 'SALE_REVERSAL' || normalizedType === 'REVERSAL'
+            : (normalizedTypeForV2 === 'SALE_REVERSAL' || normalizedTypeForV2 === 'REVERSAL'
               ? 'REVERSAL'
-              : (normalizedType.startsWith('ADJUST') ? 'ADJUSTMENT' : normalizedType)))
+              : (normalizedTypeForV2 === 'OPENING_BALANCE' ? 'OPENING_BALANCE'
+                : (normalizedTypeForV2.startsWith('ADJUST') ? 'ADJUSTMENT' : normalizedTypeForV2))))
 
       const sourceType = Boolean(create_expense)
         ? 'expense'
@@ -333,7 +384,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ status: 'success', ...row })
+    return NextResponse.json({
+      status: 'success',
+      ...row,
+      auto_opening_balance: isOpeningBalance
+    })
   } catch (error) {
     if (isCycleInventoryLockedError(error)) {
       return NextResponse.json({ status: 'error', message: error.message }, { status: 409 })

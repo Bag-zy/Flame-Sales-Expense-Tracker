@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
 import { getApiOrSessionUser } from '@/lib/api-auth-keys'
+// Refresh
 
 /**
  * @swagger
@@ -120,12 +121,22 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
-    if (!user?.id) {
+
+    if (!user) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
 
-    await db.query('DELETE FROM users WHERE id = $1', [user.id])
+    // Delete dependent rows before removing the user to avoid FK violations.
+    // Order matters: assistant_mcp_keys references api_keys, which references users.
+    // organizations.created_by is handled by ON DELETE SET NULL constraint.
+    await db.transaction(async (tx) => {
+      await tx.query('DELETE FROM assistant_mcp_keys WHERE user_id = $1', [user.id])
+      await tx.query('DELETE FROM api_keys WHERE user_id = $1', [user.id])
+      await tx.query('DELETE FROM project_assignments WHERE user_id = $1', [user.id])
+      await tx.query('DELETE FROM users WHERE id = $1', [user.id])
+    })
 
+    console.log(`User ${user.id} deleted successfully`)
     return NextResponse.json({ status: 'success', message: 'Account deleted' })
   } catch (error) {
     console.error('Error deleting user account:', error)

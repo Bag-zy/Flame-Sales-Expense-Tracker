@@ -106,21 +106,11 @@ export async function GET(request: NextRequest) {
     let query = `
       SELECT r.id, r.expense_id, r.file_path, r.upload_date, r.organization_id, r.raw_text, r.structured_data
       FROM receipts r
-      LEFT JOIN expenses e ON e.id = r.expense_id AND e.organization_id = r.organization_id
+      LEFT JOIN expenses e ON e.id = r.expense_id
       WHERE r.organization_id = $1
     `;
     const params: any[] = [organizationId];
     let paramIndex = 1;
-
-    if (user.role !== 'admin') {
-      paramIndex += 1;
-      query += ` AND e.project_id IN (
-        SELECT pa.project_id FROM project_assignments pa WHERE pa.user_id = $${paramIndex}
-        UNION
-        SELECT pa.project_id FROM project_assignments pa JOIN team_members tm ON tm.team_id = pa.team_id WHERE tm.user_id = $${paramIndex}
-      )`;
-      params.push(user.id);
-    }
 
     if (projectId) {
       paramIndex += 1;
@@ -152,11 +142,7 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`);
     }
 
-    if (id) {
-      query += ' LIMIT 1';
-    } else {
-      query += ' ORDER BY r.upload_date DESC';
-    }
+    query += id ? ' LIMIT 1' : ' ORDER BY r.upload_date DESC';
 
     const result = await db.query(query, params);
 
@@ -231,5 +217,39 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating receipt:', error);
     return NextResponse.json({ status: 'error', message: 'Failed to create receipt' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getApiOrSessionUser(request);
+    if (!user?.organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
+    }
+    const { organizationId } = user;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ status: 'error', message: 'Receipt ID is required' }, { status: 400 });
+    }
+
+    const result = await db.query(
+      'DELETE FROM receipts WHERE id = $1 AND organization_id = $2 RETURNING id',
+      [id, organizationId]
+    );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ status: 'error', message: 'Receipt not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      status: 'success',
+      message: 'Receipt deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting receipt:', error);
+    return NextResponse.json({ status: 'error', message: 'Failed to delete receipt' }, { status: 500 });
   }
 }

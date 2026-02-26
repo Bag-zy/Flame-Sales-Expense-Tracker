@@ -466,7 +466,7 @@ export default function HomePage() {
         const orgData = await orgResponse.json()
 
         if (orgData.status === 'success' && orgData.organizations.length === 0) {
-          router.push('/setup')
+          router.push('/workspace-management')
         }
       } catch (error) {
         console.error(error)
@@ -491,20 +491,20 @@ export default function HomePage() {
 
         <div className="flex flex-wrap gap-2 justify-end">
           <Button size="sm" className="text-xs px-2 sm:text-sm sm:px-4"
-            onClick={() => router.push('/expenses?open=expense')}
+            onClick={() => router.push('/expense-management?action=add-expense')}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Expense
           </Button>
           <Button size="sm" className="text-xs px-2 sm:text-sm sm:px-4"
-            onClick={() => router.push('/sales?open=sale')}
+            onClick={() => router.push('/sales-management?action=add-sale')}
             variant="outline"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Sale
           </Button>
           <Button size="sm" className="text-xs px-2 sm:text-sm sm:px-4"
-            onClick={() => router.push('/invoices?open=invoice')}
+            onClick={() => router.push('/sales-management?action=create-invoice')}
             variant="outline"
           >
             <Plus className="w-4 h-4 mr-2" />

@@ -1,0 +1,9 @@
+{
+  "python_version": "3.12",
+  "dockerfile_lines": [],
+  "dependencies": ["."],
+  "graphs": {
+    "flame_assistant": "./agent.py:graph"
+  },
+  "env": ".env"
+}

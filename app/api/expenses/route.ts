@@ -7,6 +7,7 @@ import { postInventoryV2Movement, postInventoryV2MovementByVariantId } from '@/l
 
 type QueryFn = (text: string, params?: any[]) => Promise<{ rows: any[] }>
 
+// Cache for inventory column presence
 let expensesHasInventoryVariantIdCache: boolean | null = null
 
 async function expensesHasInventoryItemVariantId(queryFn: QueryFn): Promise<boolean> {
@@ -340,15 +341,15 @@ export async function GET(request: Request) {
     }
 
     const result = await db.query(query, params)
-    return NextResponse.json({ 
-      status: 'success', 
-      expenses: result.rows 
+    return NextResponse.json({
+      status: 'success',
+      expenses: result.rows
     })
   } catch (error) {
     console.error('Expenses GET error:', error)
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to fetch expenses' 
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to fetch expenses'
     }, { status: 500 })
   }
 }
@@ -373,10 +374,24 @@ export async function POST(request: NextRequest) {
       expense_date,
       product_id,
       variant_id,
-      inventory_item_variant_id,
+      inventory_item_variant_id: raw_inventory_item_variant_id,
       inventory_quantity,
       inventory_unit_cost,
+      inventory_item_id, // Add inventory_item_id support
     } = await request.json()
+
+    let inventory_item_variant_id = raw_inventory_item_variant_id
+
+    // If inventory_item_id is provided but no variant_id, try to find default variant
+    if (!inventory_item_variant_id && inventory_item_id) {
+      const variantRes = await db.query(
+        'SELECT id FROM inventory_item_variants WHERE inventory_item_id = $1 ORDER BY id ASC LIMIT 1',
+        [inventory_item_id]
+      )
+      if (variantRes.rows.length > 0) {
+        inventory_item_variant_id = variantRes.rows[0].id
+      }
+    }
 
     if (user.role !== 'admin') {
       if (!project_id) {
@@ -417,6 +432,10 @@ export async function POST(request: NextRequest) {
 
     const numericAmount = computedAmount
 
+    if (safeInventoryQuantity > 0 && !project_id) {
+      return NextResponse.json({ status: 'error', message: 'Project is required for inventory-linked expenses' }, { status: 400 })
+    }
+
     const result = await db.transaction(async (tx) => {
       const safeCycleId = cycle_id === undefined || cycle_id === null
         ? null
@@ -430,48 +449,48 @@ export async function POST(request: NextRequest) {
 
       const insert = hasInvVariant
         ? await tx.query(
-            'INSERT INTO expenses (project_id, category_id, vendor_id, payment_method_id, cycle_id, expense_name, description, amount, amount_org_ccy, date_time_created, organization_id, created_by, product_id, variant_id, inventory_item_variant_id, inventory_quantity, inventory_unit_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
-            [
-              project_id || null,
-              category_id || null,
-              vendor_id || null,
-              payment_method_id || null,
-              safeCycleId,
-              expense_name || null,
-              description || null,
-              numericAmount,
-              amountOrgCcy,
-              expense_date || new Date().toISOString(),
-              organizationId,
-              userId,
-              product_id || null,
-              variant_id || null,
-              inventoryItemVariantId,
-              safeInventoryQuantity || null,
-              safeInventoryUnitCost || null,
-            ],
-          )
+          'INSERT INTO expenses (project_id, category_id, vendor_id, payment_method_id, cycle_id, expense_name, description, amount, amount_org_ccy, date_time_created, organization_id, created_by, product_id, variant_id, inventory_item_variant_id, inventory_quantity, inventory_unit_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
+          [
+            project_id || null,
+            category_id || null,
+            vendor_id || null,
+            payment_method_id || null,
+            safeCycleId,
+            expense_name || null,
+            description || null,
+            numericAmount,
+            amountOrgCcy,
+            expense_date || new Date().toISOString(),
+            organizationId,
+            userId,
+            product_id || null,
+            variant_id || null,
+            inventoryItemVariantId,
+            safeInventoryQuantity || null,
+            safeInventoryUnitCost || null,
+          ],
+        )
         : await tx.query(
-            'INSERT INTO expenses (project_id, category_id, vendor_id, payment_method_id, cycle_id, expense_name, description, amount, amount_org_ccy, date_time_created, organization_id, created_by, product_id, variant_id, inventory_quantity, inventory_unit_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *',
-            [
-              project_id || null,
-              category_id || null,
-              vendor_id || null,
-              payment_method_id || null,
-              safeCycleId,
-              expense_name || null,
-              description || null,
-              numericAmount,
-              amountOrgCcy,
-              expense_date || new Date().toISOString(),
-              organizationId,
-              userId,
-              product_id || null,
-              variant_id || null,
-              safeInventoryQuantity || null,
-              safeInventoryUnitCost || null,
-            ],
-          )
+          'INSERT INTO expenses (project_id, category_id, vendor_id, payment_method_id, cycle_id, expense_name, description, amount, amount_org_ccy, date_time_created, organization_id, created_by, product_id, variant_id, inventory_quantity, inventory_unit_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *',
+          [
+            project_id || null,
+            category_id || null,
+            vendor_id || null,
+            payment_method_id || null,
+            safeCycleId,
+            expense_name || null,
+            description || null,
+            numericAmount,
+            amountOrgCcy,
+            expense_date || new Date().toISOString(),
+            organizationId,
+            userId,
+            product_id || null,
+            variant_id || null,
+            safeInventoryQuantity || null,
+            safeInventoryUnitCost || null,
+          ],
+        )
 
       // Increase stock if this is an inventory-linked purchase.
       if (safeInventoryQuantity > 0) {
@@ -564,18 +583,18 @@ export async function POST(request: NextRequest) {
       return insert
     })
 
-    return NextResponse.json({ 
-      status: 'success', 
-      expense: result.rows[0] 
+    return NextResponse.json({
+      status: 'success',
+      expense: result.rows[0]
     })
   } catch (error) {
     if (isCycleInventoryLockedError(error)) {
       return NextResponse.json({ status: 'error', message: error.message }, { status: 409 })
     }
     console.error('Expense creation error:', error)
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to create expense' 
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to create expense'
     }, { status: 500 })
   }
 }
@@ -601,10 +620,24 @@ export async function PUT(request: NextRequest) {
       expense_date,
       product_id,
       variant_id,
-      inventory_item_variant_id,
+      inventory_item_variant_id: raw_inventory_item_variant_id,
       inventory_quantity,
       inventory_unit_cost,
+      inventory_item_id, // Add inventory_item_id support
     } = await request.json()
+
+    let inventory_item_variant_id = raw_inventory_item_variant_id
+
+    // If inventory_item_id is provided but no variant_id, try to find default variant
+    if (!inventory_item_variant_id && inventory_item_id) {
+      const variantRes = await db.query(
+        'SELECT id FROM inventory_item_variants WHERE inventory_item_id = $1 ORDER BY id ASC LIMIT 1',
+        [inventory_item_id]
+      )
+      if (variantRes.rows.length > 0) {
+        inventory_item_variant_id = variantRes.rows[0].id
+      }
+    }
 
     if (user.role !== 'admin') {
       const existing = await db.query(
@@ -689,6 +722,10 @@ export async function PUT(request: NextRequest) {
       const effectiveInventoryItemVariantId = hasInvVariant
         ? (inventory_item_variant_id === undefined ? originalInventoryItemVariantId : parseOptionalInt(inventory_item_variant_id))
         : null
+
+      if (safeInventoryQuantity > 0 && !effectiveProjectId) {
+        throw new Error('Project is required for inventory-linked expenses')
+      }
 
       await assertCycleNotInventoryLocked(tx.query, originalCycleId, organizationId)
       await assertCycleNotInventoryLocked(tx.query, targetCycleId, organizationId)
@@ -867,61 +904,68 @@ export async function PUT(request: NextRequest) {
 
       return hasInvVariant
         ? await tx.query(
-            'UPDATE expenses SET project_id = $1, category_id = $2, vendor_id = $3, payment_method_id = $4, cycle_id = $5, expense_name = $6, description = $7, amount = $8, amount_org_ccy = $9, date_time_created = $10, product_id = $11, variant_id = $12, inventory_item_variant_id = $13, inventory_quantity = $14, inventory_unit_cost = $15 WHERE id = $16 AND organization_id = $17 RETURNING *',
-            [
-              effectiveProjectId,
-              category_id,
-              vendor_id,
-              payment_method_id,
-              targetCycleId,
-              expense_name || null,
-              description,
-              numericAmount,
-              amountOrgCcy,
-              expense_date,
-              effectiveProductId,
-              effectiveVariantId,
-              effectiveInventoryItemVariantId,
-              safeInventoryQuantity || null,
-              safeInventoryUnitCost || null,
-              id,
-              organizationId,
-            ],
-          )
+          'UPDATE expenses SET project_id = $1, category_id = $2, vendor_id = $3, payment_method_id = $4, cycle_id = $5, expense_name = $6, description = $7, amount = $8, amount_org_ccy = $9, date_time_created = $10, product_id = $11, variant_id = $12, inventory_item_variant_id = $13, inventory_quantity = $14, inventory_unit_cost = $15 WHERE id = $16 AND organization_id = $17 RETURNING *',
+          [
+            effectiveProjectId,
+            category_id,
+            vendor_id,
+            payment_method_id,
+            targetCycleId,
+            expense_name || null,
+            description,
+            numericAmount,
+            amountOrgCcy,
+            expense_date,
+            effectiveProductId,
+            effectiveVariantId,
+            effectiveInventoryItemVariantId,
+            safeInventoryQuantity || null,
+            safeInventoryUnitCost || null,
+            id,
+            organizationId,
+          ],
+        )
         : await tx.query(
-            'UPDATE expenses SET project_id = $1, category_id = $2, vendor_id = $3, payment_method_id = $4, cycle_id = $5, expense_name = $6, description = $7, amount = $8, amount_org_ccy = $9, date_time_created = $10, product_id = $11, variant_id = $12, inventory_quantity = $13, inventory_unit_cost = $14 WHERE id = $15 AND organization_id = $16 RETURNING *',
-            [
-              effectiveProjectId,
-              category_id,
-              vendor_id,
-              payment_method_id,
-              targetCycleId,
-              expense_name || null,
-              description,
-              numericAmount,
-              amountOrgCcy,
-              expense_date,
-              effectiveProductId,
-              effectiveVariantId,
-              safeInventoryQuantity || null,
-              safeInventoryUnitCost || null,
-              id,
-              organizationId,
-            ],
-          )
+          'UPDATE expenses SET project_id = $1, category_id = $2, vendor_id = $3, payment_method_id = $4, cycle_id = $5, expense_name = $6, description = $7, amount = $8, amount_org_ccy = $9, date_time_created = $10, product_id = $11, variant_id = $12, inventory_quantity = $13, inventory_unit_cost = $14 WHERE id = $15 AND organization_id = $16 RETURNING *',
+          [
+            effectiveProjectId,
+            category_id,
+            vendor_id,
+            payment_method_id,
+            targetCycleId,
+            expense_name || null,
+            description,
+            numericAmount,
+            amountOrgCcy,
+            expense_date,
+            effectiveProductId,
+            effectiveVariantId,
+            safeInventoryQuantity || null,
+            safeInventoryUnitCost || null,
+            id,
+            organizationId,
+          ],
+        )
     })
 
-    return NextResponse.json({ 
-      status: 'success', 
-      expense: result.rows[0] 
+    return NextResponse.json({
+      status: 'success',
+      expense: result.rows[0]
     })
   } catch (error) {
     if (isCycleInventoryLockedError(error)) {
       return NextResponse.json({ status: 'error', message: error.message }, { status: 409 })
     }
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to update expense' 
+
+    const message = error instanceof Error ? error.message : 'Failed to update expense'
+    if (message.includes('Project is required') || message.includes('Forbidden')) {
+      return NextResponse.json({ status: 'error', message }, { status: message.includes('Forbidden') ? 403 : 400 })
+    }
+
+    console.error('Update expense error:', error)
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to update expense'
     }, { status: 500 })
   }
 }
@@ -1092,9 +1136,9 @@ export async function DELETE(request: NextRequest) {
     if (isCycleInventoryLockedError(error)) {
       return NextResponse.json({ status: 'error', message: error.message }, { status: 409 })
     }
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to delete expense' 
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to delete expense'
     }, { status: 500 })
   }
 }

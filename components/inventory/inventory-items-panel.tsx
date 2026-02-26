@@ -1,16 +1,20 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Eye, Plus, Trash2 } from 'lucide-react'
 
 import { useFilter } from '@/lib/context/filter-context'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+
+import { InventoryItemV2Form } from '@/components/inventory/inventory-item-v2-form'
+import { InventoryItemDetails } from '@/components/inventory/inventory-item-details'
 
 type InventoryItemTypeCode = 'RAW_MATERIAL' | 'WORK_IN_PROGRESS' | 'FINISHED_GOODS'
 
@@ -36,14 +40,10 @@ type InventoryItem = {
   variants: InventoryItemVariant[]
 }
 
-function toNumOrNull(v: any): number | null {
-  if (v === null || v === undefined || v === '') return null
-  const n = typeof v === 'number' ? v : parseFloat(String(v))
-  return Number.isFinite(n) ? n : null
-}
-
 export function InventoryItemsPanel({ lockedTypeCode }: { lockedTypeCode?: InventoryItemTypeCode } = {}) {
-  const { selectedProject, selectedCycle } = useFilter()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { selectedProject, selectedCycle, projects, currentCurrencyCode } = useFilter() as any
 
   const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,19 +51,8 @@ export function InventoryItemsPanel({ lockedTypeCode }: { lockedTypeCode?: Inven
   const effectiveTypeFilter: InventoryItemTypeCode = lockedTypeCode ?? typeFilter
 
   const [showCreate, setShowCreate] = useState(false)
-  const [createForm, setCreateForm] = useState({
-    type_code: (lockedTypeCode ?? 'RAW_MATERIAL') as InventoryItemTypeCode,
-    name: '',
-    sku: '',
-    uom: '',
-    default_purchase_unit_cost: '',
-    default_sale_price: '',
-    variant_label: 'Default',
-    variant_sku: '',
-  })
-  const [creating, setCreating] = useState(false)
-
-  const canCreateHere = effectiveTypeFilter !== 'FINISHED_GOODS'
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const hasBalances = Boolean(selectedProject && selectedCycle)
 
@@ -98,96 +87,89 @@ export function InventoryItemsPanel({ lockedTypeCode }: { lockedTypeCode?: Inven
   useEffect(() => {
     if (lockedTypeCode) {
       setTypeFilter(lockedTypeCode)
-      setCreateForm((p) => ({ ...p, type_code: lockedTypeCode }))
     }
   }, [lockedTypeCode])
 
-  const variantRows = useMemo(() => {
-    const rows: Array<{
-      itemId: number
-      itemName: string
-      typeCode: InventoryItemTypeCode
-      variant: InventoryItemVariant
-    }> = []
+  useEffect(() => {
+    if (searchParams.get('action') === 'add-inventory') {
+      setShowCreate(true)
 
-    for (const it of items) {
-      for (const v of it.variants || []) {
-        rows.push({ itemId: it.id, itemName: it.name, typeCode: it.type_code, variant: v })
-      }
+      // Clean up the URL so that refreshing/navigating doesn't keep popping the modal open
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('action')
+      router.replace(newUrl.pathname + newUrl.search, { scroll: false })
     }
+  }, [searchParams, router])
 
-    return rows
-  }, [items])
+  const filteredItems = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim()
+    if (!term) return items
+    return items.filter(
+      it =>
+        it.name.toLowerCase().includes(term) ||
+        (it.sku && it.sku.toLowerCase().includes(term))
+    )
+  }, [items, searchTerm])
 
-  const handleCreate = async () => {
-    if (!createForm.name.trim()) {
-      toast.error('Name is required')
+  const projectNameById = useMemo(() => {
+    const m = new Map<number, string>()
+    if (Array.isArray(projects)) {
+      for (const p of projects) m.set(p.id, p.project_name)
+    }
+    return m
+  }, [projects])
+
+  const handleDeleteItem = async (itemId: number) => {
+    if (!confirm('Are you sure you want to delete this inventory item? This will delete all variants and cannot be undone.')) {
       return
     }
 
-    const createType = lockedTypeCode ?? createForm.type_code
-
-    if (createType === 'FINISHED_GOODS') {
-      toast.message('Products / Finished Goods are managed in the Products / Finished Goods tab.')
-      return
-    }
-
-    setCreating(true)
     try {
-      const payload: any = {
-        inventory_item_type_code: createType,
-        name: createForm.name.trim(),
-        sku: createForm.sku.trim() || null,
-        uom: createForm.uom.trim() || null,
-        default_purchase_unit_cost: toNumOrNull(createForm.default_purchase_unit_cost),
-        default_sale_price: toNumOrNull(createForm.default_sale_price),
-        variants: [
-          {
-            label: createForm.variant_label?.trim() || 'Default',
-            sku: createForm.variant_sku?.trim() || null,
-            unit_cost: toNumOrNull(createForm.default_purchase_unit_cost),
-            selling_price: toNumOrNull(createForm.default_sale_price),
-          },
-        ],
-      }
-
-      const res = await fetch('/api/v1/inventory-items', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+      const res = await fetch(`/api/v1/inventory-items?id=${itemId}`, {
+        method: 'DELETE',
       })
-
       const data = await res.json().catch(() => null)
-      if (!res.ok || !data || data.status !== 'success') {
-        throw new Error(data?.message || 'Failed to create inventory item')
+
+      if (!res.ok || data?.status !== 'success') {
+        throw new Error(data?.message || 'Failed to delete item')
       }
 
-      toast.success('Inventory item created')
-      setShowCreate(false)
-      setCreateForm({
-        type_code: createForm.type_code,
-        name: '',
-        sku: '',
-        uom: '',
-        default_purchase_unit_cost: '',
-        default_sale_price: '',
-        variant_label: 'Default',
-        variant_sku: '',
-      })
+      toast.success('Item deleted successfully')
       await loadItems()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to create inventory item')
-    } finally {
-      setCreating(false)
+      toast.error(e instanceof Error ? e.message : 'Failed to delete item')
     }
+  }
+
+  if (selectedItem) {
+    const project = (projects as any[])?.find((p: any) => p.id.toString() === selectedProject);
+
+    return (
+      <InventoryItemDetails
+        item={selectedItem as any}
+        projectName={project?.project_name}
+        cycleName={selectedCycle ? `Cycle #${selectedCycle}` : undefined}
+        onBack={() => setSelectedItem(null)}
+        onEdit={() => {
+          // Future: Open edit form
+          toast.info('Edit functionality coming soon');
+        }}
+        onDelete={() => {
+          handleDeleteItem(selectedItem.id);
+          setSelectedItem(null);
+        }}
+        currencyLabel={currentCurrencyCode}
+        hasBalances={hasBalances}
+      />
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {!lockedTypeCode ? (
-            <div className="w-[240px]">
+            <div className="w-[200px]">
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as InventoryItemTypeCode)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
@@ -200,69 +182,108 @@ export function InventoryItemsPanel({ lockedTypeCode }: { lockedTypeCode?: Inven
               </Select>
             </div>
           ) : null}
+          <div className="w-[250px]">
+            <Input
+              placeholder="Search items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
 
         <Button
           onClick={() => {
-            if (!canCreateHere) {
-              toast.message('Finished Goods are managed in the Finished Goods tab.')
-              return
-            }
-            if (lockedTypeCode) {
-              setCreateForm((p) => ({ ...p, type_code: lockedTypeCode }))
-            }
             setShowCreate(true)
           }}
-          disabled={!canCreateHere}
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Item
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{loading ? 'Loading...' : 'Items'}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-sm text-muted-foreground">Loading items...</div>
-          ) : variantRows.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No items found.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-border text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-semibold text-foreground">Item</th>
-                    <th className="px-4 py-2 text-left font-semibold text-foreground">Variant</th>
-                    <th className="px-4 py-2 text-right font-semibold text-foreground">On Hand</th>
-                    <th className="px-4 py-2 text-right font-semibold text-foreground">Avg Cost</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {variantRows.map((r) => (
-                    <tr key={r.variant.id} className="hover:bg-muted/50">
-                      <td className="px-4 py-2 whitespace-nowrap">{r.itemName}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">{r.variant.label || r.variant.sku || `#${r.variant.id}`}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-right">
-                        {hasBalances ? Number(r.variant.quantity_on_hand ?? 0).toLocaleString() : '—'}
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-right">
-                        {hasBalances
-                          ? r.variant.avg_unit_cost == null
-                            ? '—'
-                            : Number(r.variant.avg_unit_cost).toLocaleString()
-                          : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {loading ? (
+          <div className="col-span-full py-12 text-center text-muted-foreground">Loading items...</div>
+        ) : filteredItems.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-muted-foreground bg-card border border-dashed rounded-lg">
+            {searchTerm ? 'No items match your search.' : 'No items found. Click "Add Item" to create one.'}
+          </div>
+        ) : (
+          filteredItems.map((item) => {
+            const totalQty = (item.variants || []).reduce((sum, v) => sum + (v.quantity_on_hand || 0), 0)
+            // Use item.project_id if it exists, otherwise use context's selectedProject for display if needed
+            // Actually items in the list response usually have project_id
+            const projectName = (item as any).project_id ? (projectNameById.get((item as any).project_id) || 'Unknown') : 'N/A'
+
+            return (
+              <Card key={item.id} className="flex flex-col h-full hover:border-primary/50 transition-colors">
+                <CardHeader className="space-y-2 pb-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg font-bold line-clamp-1">{item.name}</CardTitle>
+                      {item.sku && (
+                        <CardDescription className="font-mono text-xs truncate">
+                          SKU: {item.sku}
+                        </CardDescription>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {item.variants?.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] h-5">
+                        {item.variants.length} variant{item.variants.length !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {!lockedTypeCode && (
+                      <Badge variant="outline" className="text-[10px] h-5">
+                        {item.type_code.replace(/_/g, ' ')}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="pb-4 flex-grow">
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Project:</span>
+                      <span className="font-medium truncate ml-2 text-right">{projectName}</span>
+                    </div>
+                    {hasBalances && (
+                      <div className="flex justify-between items-center bg-muted/30 p-2 rounded-md mt-1">
+                        <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Stock:</span>
+                        <span className="font-bold text-primary">
+                          {totalQty.toLocaleString()} {item.uom || ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+
+                <CardFooter className="pt-0 flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleDeleteItem(item.id)}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3"
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1.5" />
+                    View
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
+          })
+        )}
+      </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-xl">
@@ -270,85 +291,16 @@ export function InventoryItemsPanel({ lockedTypeCode }: { lockedTypeCode?: Inven
             <DialogTitle>Create Inventory Item</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {!lockedTypeCode ? (
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select
-                  value={createForm.type_code}
-                  onValueChange={(v) => setCreateForm((p) => ({ ...p, type_code: v as InventoryItemTypeCode }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="RAW_MATERIAL">Raw Materials</SelectItem>
-                    <SelectItem value="WORK_IN_PROGRESS">Work In Progress</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-
-            <div className="space-y-2">
-              <Label>Name *</Label>
-              <Input value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>SKU</Label>
-              <Input value={createForm.sku} onChange={(e) => setCreateForm((p) => ({ ...p, sku: e.target.value }))} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>UOM</Label>
-              <Input value={createForm.uom} onChange={(e) => setCreateForm((p) => ({ ...p, uom: e.target.value }))} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Default Purchase Unit Cost</Label>
-              <Input
-                type="number"
-                step="0.0001"
-                value={createForm.default_purchase_unit_cost}
-                onChange={(e) => setCreateForm((p) => ({ ...p, default_purchase_unit_cost: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Default Sale Price</Label>
-              <Input
-                type="number"
-                step="0.0001"
-                value={createForm.default_sale_price}
-                onChange={(e) => setCreateForm((p) => ({ ...p, default_sale_price: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Variant Label</Label>
-              <Input
-                value={createForm.variant_label}
-                onChange={(e) => setCreateForm((p) => ({ ...p, variant_label: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Variant SKU</Label>
-              <Input
-                value={createForm.variant_sku}
-                onChange={(e) => setCreateForm((p) => ({ ...p, variant_sku: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setShowCreate(false)} disabled={creating}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleCreate} disabled={creating}>
-              {creating ? 'Creating...' : 'Create'}
-            </Button>
-          </DialogFooter>
+          <InventoryItemV2Form
+            typeCode={effectiveTypeFilter}
+            projectId={selectedProject ? parseInt(selectedProject, 10) : null}
+            cycleId={selectedCycle ? parseInt(selectedCycle, 10) : null}
+            onSuccess={async () => {
+              setShowCreate(false)
+              await loadItems()
+            }}
+            onCancel={() => setShowCreate(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

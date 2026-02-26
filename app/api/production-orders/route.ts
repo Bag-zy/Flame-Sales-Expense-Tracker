@@ -47,9 +47,20 @@ async function assertProjectAccess(queryFn: (t: string, p?: any[]) => Promise<{ 
 export async function GET(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
-    if (!user?.organizationId) {
+    if (!user) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
+
+    const organizationId = typeof user.organizationId === 'number'
+      ? user.organizationId
+      : parseInt(String((user as any)?.organizationId || '0'), 10) || 0
+    if (!organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
+    }
+
+    const userId = typeof user.id === 'number'
+      ? user.id
+      : parseInt(String((user as any)?.id || '0'), 10) || 0
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -57,7 +68,7 @@ export async function GET(request: NextRequest) {
     const cycleId = searchParams.get('cycle_id')
 
     let query = 'SELECT * FROM production_orders WHERE organization_id = $1'
-    const params: any[] = [user.organizationId]
+    const params: any[] = [organizationId]
     let i = 1
 
     if (user.role !== 'admin') {
@@ -67,7 +78,7 @@ export async function GET(request: NextRequest) {
         UNION
         SELECT pa.project_id FROM project_assignments pa JOIN team_members tm ON tm.team_id = pa.team_id WHERE tm.user_id = $${i}
       )`
-      params.push(user.id)
+      params.push(userId)
     }
 
     if (id) {
@@ -130,9 +141,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
-    if (!user?.organizationId) {
+    if (!user) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
+
+    const organizationId = typeof user.organizationId === 'number'
+      ? user.organizationId
+      : parseInt(String((user as any)?.organizationId || '0'), 10) || 0
+    if (!organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
+    }
+
+    const userId = typeof user.id === 'number'
+      ? user.id
+      : parseInt(String((user as any)?.id || '0'), 10) || 0
 
     const body = await request.json()
 
@@ -170,7 +192,7 @@ export async function POST(request: NextRequest) {
 
     const result = await db.transaction(async (tx) => {
       await assertProjectAccess(tx.query, user, projectId)
-      await assertCycleNotInventoryLocked(tx.query, cycleId, user.organizationId)
+      await assertCycleNotInventoryLocked(tx.query, cycleId, organizationId)
 
       const ins = await tx.query(
         `
@@ -186,7 +208,7 @@ export async function POST(request: NextRequest) {
         ) VALUES ($1,$2,$3,'DRAFT',$4,$5,$6,$7)
         RETURNING *
         `,
-        [user.organizationId, projectId, cycleId, outputVariantId, outputQty, notes, user.id],
+        [organizationId, projectId, cycleId, outputVariantId, outputQty, notes, userId],
       )
 
       const order = ins.rows[0]
@@ -228,9 +250,20 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
-    if (!user?.organizationId) {
+    if (!user) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
+
+    const organizationId = typeof user.organizationId === 'number'
+      ? user.organizationId
+      : parseInt(String((user as any)?.organizationId || '0'), 10) || 0
+    if (!organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
+    }
+
+    const userId = typeof user.id === 'number'
+      ? user.id
+      : parseInt(String((user as any)?.id || '0'), 10) || 0
 
     const body = await request.json()
     const id = toInt(body.id)
@@ -260,7 +293,7 @@ export async function PUT(request: NextRequest) {
     const result = await db.transaction(async (tx) => {
       const existingRes = await tx.query(
         'SELECT * FROM production_orders WHERE id = $1 AND organization_id = $2',
-        [id, user.organizationId],
+        [id, organizationId],
       )
       if (!existingRes.rows.length) {
         throw new Error('Not found')
@@ -268,7 +301,7 @@ export async function PUT(request: NextRequest) {
 
       const existing = existingRes.rows[0]
       await assertProjectAccess(tx.query, user, Number(existing.project_id))
-      await assertCycleNotInventoryLocked(tx.query, Number(existing.cycle_id), user.organizationId)
+      await assertCycleNotInventoryLocked(tx.query, Number(existing.cycle_id), organizationId)
 
       const currentStatus = String(existing.status || 'DRAFT')
 
@@ -295,6 +328,7 @@ export async function PUT(request: NextRequest) {
 
       const updatedOutputVariantId = outputVariantId === undefined ? Number(existing.output_inventory_item_variant_id) : outputVariantId
       const updatedOutputQty = outputQty === undefined ? Number(existing.output_quantity) : outputQty
+      const normalizedOutputQty = Number(updatedOutputQty) || 0
 
       const updateFields: string[] = []
       const updateParams: any[] = []
@@ -330,7 +364,7 @@ export async function PUT(request: NextRequest) {
         p += 1
         updateParams.push(id)
         p += 1
-        updateParams.push(user.organizationId)
+        updateParams.push(organizationId)
 
         await tx.query(
           `UPDATE production_orders SET ${updateFields.join(', ')} WHERE id = $${p - 1} AND organization_id = $${p}`,
@@ -340,7 +374,7 @@ export async function PUT(request: NextRequest) {
 
       const afterRes = await tx.query(
         'SELECT * FROM production_orders WHERE id = $1 AND organization_id = $2',
-        [id, user.organizationId],
+        [id, organizationId],
       )
       const after = afterRes.rows[0]
 
@@ -371,7 +405,7 @@ export async function PUT(request: NextRequest) {
                  AND inventory_item_variant_id = $4
                LIMIT 1
               `,
-              [user.organizationId, after.project_id, after.cycle_id, line.input_inventory_item_variant_id],
+              [organizationId, after.project_id, after.cycle_id, line.input_inventory_item_variant_id],
             )
             unitCost = balRes.rows[0]?.avg_unit_cost == null ? null : (Number(balRes.rows[0]?.avg_unit_cost) || null)
           }
@@ -386,7 +420,7 @@ export async function PUT(request: NextRequest) {
           totalCost += qty * (unitCost || 0)
         }
 
-        const outputUnitCost = updatedOutputQty > 0 ? (totalCost / updatedOutputQty) : 0
+        const outputUnitCost = normalizedOutputQty > 0 ? (totalCost / normalizedOutputQty) : 0
 
         for (const line of lines) {
           const qty = Number(line.quantity_required) || 0
@@ -395,7 +429,7 @@ export async function PUT(request: NextRequest) {
           const unitCost = line.unit_cost_override == null ? null : (Number(line.unit_cost_override) || null)
 
           await postInventoryV2MovementByVariantId(tx.query, {
-            organizationId: user.organizationId,
+            organizationId,
             projectId: Number(after.project_id),
             cycleId: Number(after.cycle_id),
             inventoryItemVariantId: Number(line.input_inventory_item_variant_id),
@@ -405,22 +439,22 @@ export async function PUT(request: NextRequest) {
             sourceType: 'production_order',
             sourceId: id,
             notes: after.notes ?? null,
-            createdBy: user.id,
+            createdBy: userId,
           })
         }
 
         await postInventoryV2MovementByVariantId(tx.query, {
-          organizationId: user.organizationId,
+          organizationId,
           projectId: Number(after.project_id),
           cycleId: Number(after.cycle_id),
           inventoryItemVariantId: Number(updatedOutputVariantId),
-          quantityDelta: Number(updatedOutputQty),
+          quantityDelta: normalizedOutputQty,
           unitCost: outputUnitCost,
           transactionType: 'PRODUCTION_RECEIPT',
           sourceType: 'production_order',
           sourceId: id,
           notes: after.notes ?? null,
-          createdBy: user.id,
+          createdBy: userId,
         })
 
         await tx.query(
@@ -431,13 +465,13 @@ export async function PUT(request: NextRequest) {
                  status = 'COMPLETED'
            WHERE id = $2 AND organization_id = $3
           `,
-          [outputUnitCost, id, user.organizationId],
+          [outputUnitCost, id, organizationId],
         )
       }
 
       const finalRes = await tx.query(
         'SELECT * FROM production_orders WHERE id = $1 AND organization_id = $2',
-        [id, user.organizationId],
+        [id, organizationId],
       )
       const finalOrder = finalRes.rows[0]
       const inputsRes = await tx.query(
@@ -462,7 +496,14 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
-    if (!user?.organizationId) {
+    if (!user) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
+    }
+
+    const organizationId = typeof user.organizationId === 'number'
+      ? user.organizationId
+      : parseInt(String((user as any)?.organizationId || '0'), 10) || 0
+    if (!organizationId) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
 
@@ -475,7 +516,7 @@ export async function DELETE(request: NextRequest) {
     await db.transaction(async (tx) => {
       const existingRes = await tx.query(
         'SELECT project_id, cycle_id, status FROM production_orders WHERE id = $1 AND organization_id = $2',
-        [id, user.organizationId],
+        [id, organizationId],
       )
       if (!existingRes.rows.length) {
         throw new Error('Not found')
@@ -483,14 +524,14 @@ export async function DELETE(request: NextRequest) {
 
       const existing = existingRes.rows[0]
       await assertProjectAccess(tx.query, user, Number(existing.project_id))
-      await assertCycleNotInventoryLocked(tx.query, Number(existing.cycle_id), user.organizationId)
+      await assertCycleNotInventoryLocked(tx.query, Number(existing.cycle_id), organizationId)
 
       const currentStatus = String(existing.status || 'DRAFT')
       if (currentStatus === 'COMPLETED') {
         throw new Error('Cannot delete a completed production order')
       }
 
-      await tx.query('DELETE FROM production_orders WHERE id = $1 AND organization_id = $2', [id, user.organizationId])
+      await tx.query('DELETE FROM production_orders WHERE id = $1 AND organization_id = $2', [id, organizationId])
     })
 
     return NextResponse.json({ status: 'success', message: 'Production order deleted successfully' })

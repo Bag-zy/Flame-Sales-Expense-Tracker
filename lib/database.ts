@@ -6,47 +6,23 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is not set')
 }
 
+// HTTP client for simple queries
 const sql = neon(connectionString)
 
 type QueryResult = { rows: any[] }
 
 async function query(text: string, params?: any[]): Promise<QueryResult> {
-  // The Neon serverless driver now requires function-style calls to use
-  // sql.query("SELECT $1", [value]) instead of sql("SELECT $1", [value]).
-  // We keep a pg-like db.query(text, params) API and adapt under the hood.
+  // Newer neon versions require .query() for $1 placeholders
   const result = params && params.length > 0
-    ? await (sql as any).query(text, params)
-    : await (sql as any).query(text)
+    ? await sql.query(text, params)
+    : await sql.query(text)
 
-  // Normalize different possible return shapes into a simple { rows } object
-  const rows = Array.isArray(result) ? result : (result?.rows ?? [])
+  const rows = Array.isArray(result) ? result : (result as any).rows || []
   return { rows }
 }
 
 async function transaction<T>(fn: (tx: { query: typeof query }) => Promise<T>): Promise<T> {
-  const sqlAny = sql as any
-
-  if (typeof sqlAny.transaction === 'function') {
-    try {
-      return await sqlAny.transaction(async (trx: any) => {
-        const txQuery = async (text: string, params?: any[]): Promise<QueryResult> => {
-          const result = params && params.length > 0
-            ? await trx.query(text, params)
-            : await trx.query(text)
-
-          const rows = Array.isArray(result) ? result : (result?.rows ?? [])
-          return { rows }
-        }
-
-        return await fn({ query: txQuery })
-      })
-    } catch {
-      // Some Neon serverless driver versions only support array-of-queries transactions.
-      // In that case we fall back to non-transactional execution.
-      return await fn({ query })
-    }
-  }
-
+  // Simple fallback for HTTP client
   return await fn({ query })
 }
 

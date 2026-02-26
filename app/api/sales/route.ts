@@ -409,7 +409,18 @@ export async function POST(request: NextRequest) {
       const amountOrgCcy = await computeAmountInOrgCurrency(organizationId, project_id || null, amount)
 
       const hasInvVariant = await salesHasInventoryItemVariantId(tx.query)
-      const inventoryItemVariantId = hasInvVariant ? parseOptionalInt(inventory_item_variant_id) : null
+      let inventoryItemVariantId = hasInvVariant ? parseOptionalInt(inventory_item_variant_id) : null
+      let finalVariantId = parseOptionalInt(variant_id)
+
+      if (hasInvVariant && finalVariantId !== null && inventoryItemVariantId === null) {
+        // Check if the provided variant_id exists in product_variants (legacy check)
+        // If not, and we have V2 support, treat it as inventory_item_variant_id
+        const legacyCheck = await tx.query('SELECT 1 FROM product_variants WHERE id = $1', [finalVariantId])
+        if (legacyCheck.rows.length === 0) {
+          inventoryItemVariantId = finalVariantId
+          finalVariantId = null
+        }
+      }
 
       let customerId: number | null = null
       if (customer && typeof customer === 'string' && customer.trim()) {
@@ -425,50 +436,50 @@ export async function POST(request: NextRequest) {
 
       const saleResult = hasInvVariant
         ? await tx.query(
-            'INSERT INTO sales (project_id, cycle_id, product_id, variant_id, inventory_item_variant_id, customer_name, customer_id, quantity, unit_cost, price, status, cash_at_hand, balance, amount, amount_org_ccy, sale_date, organization_id, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *',
-            [
-              project_id || null,
-              safeCycleId,
-              product_id || null,
-              variant_id || null,
-              inventoryItemVariantId,
-              customer || null,
-              customerId,
-              safeQuantity,
-              safeUnitCost,
-              safePrice,
-              status || 'pending',
-              safeCashAtHand,
-              safeBalance,
-              amount,
-              amountOrgCcy,
-              sale_date || null,
-              organizationId,
-              userId,
-            ],
-          )
+          'INSERT INTO sales (project_id, cycle_id, product_id, variant_id, inventory_item_variant_id, customer_name, customer_id, quantity, unit_cost, price, status, cash_at_hand, balance, amount, amount_org_ccy, sale_date, organization_id, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *',
+          [
+            project_id || null,
+            safeCycleId,
+            product_id || null,
+            finalVariantId,
+            inventoryItemVariantId,
+            customer || null,
+            customerId,
+            safeQuantity,
+            safeUnitCost,
+            safePrice,
+            status || 'pending',
+            safeCashAtHand,
+            safeBalance,
+            amount,
+            amountOrgCcy,
+            sale_date || null,
+            organizationId,
+            userId,
+          ],
+        )
         : await tx.query(
-            'INSERT INTO sales (project_id, cycle_id, product_id, variant_id, customer_name, customer_id, quantity, unit_cost, price, status, cash_at_hand, balance, amount, amount_org_ccy, sale_date, organization_id, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
-            [
-              project_id || null,
-              safeCycleId,
-              product_id || null,
-              variant_id || null,
-              customer || null,
-              customerId,
-              safeQuantity,
-              safeUnitCost,
-              safePrice,
-              status || 'pending',
-              safeCashAtHand,
-              safeBalance,
-              amount,
-              amountOrgCcy,
-              sale_date || null,
-              organizationId,
-              userId,
-            ],
-          )
+          'INSERT INTO sales (project_id, cycle_id, product_id, variant_id, customer_name, customer_id, quantity, unit_cost, price, status, cash_at_hand, balance, amount, amount_org_ccy, sale_date, organization_id, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *',
+          [
+            project_id || null,
+            safeCycleId,
+            product_id || null,
+            finalVariantId,
+            customer || null,
+            customerId,
+            safeQuantity,
+            safeUnitCost,
+            safePrice,
+            status || 'pending',
+            safeCashAtHand,
+            safeBalance,
+            amount,
+            amountOrgCcy,
+            sale_date || null,
+            organizationId,
+            userId,
+          ],
+        )
 
       const createdSale = saleResult.rows[0]
 
@@ -489,7 +500,7 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        if (product_id) {
+        if (product_id && !inventoryItemVariantId) {
           const productUpdate = await tx.query(
             'UPDATE products SET quantity_in_stock = quantity_in_stock - $1 WHERE id = $2 AND organization_id = $3 RETURNING id',
             [safeQuantity, product_id, organizationId]
@@ -499,10 +510,10 @@ export async function POST(request: NextRequest) {
             throw new Error('Failed to update product stock. Product not found or permission denied.')
           }
 
-          if (variant_id) {
+          if (finalVariantId) {
             const variantUpdate = await tx.query(
               'UPDATE product_variants SET quantity_in_stock = quantity_in_stock - $1 WHERE id = $2 RETURNING id',
-              [safeQuantity, variant_id]
+              [safeQuantity, finalVariantId]
             )
             if (variantUpdate.rows.length === 0) {
               throw new Error('Failed to update product variant stock. Variant not found.')
@@ -528,7 +539,7 @@ export async function POST(request: NextRequest) {
               project_id || null,
               safeCycleId,
               product_id,
-              variant_id || null,
+              finalVariantId,
               -safeQuantity,
               safeUnitCost || null,
               `Sale #${createdSale.id}${customer ? ` - ${customer}` : ''}`,
@@ -542,7 +553,7 @@ export async function POST(request: NextRequest) {
               projectId: project_id || null,
               cycleId: safeCycleId,
               productId: product_id,
-              productVariantId: variant_id || null,
+              productVariantId: finalVariantId,
               quantityDelta: -safeQuantity,
               unitCost: safeUnitCost || null,
               transactionType: 'SALE_ISSUE',
@@ -687,8 +698,8 @@ export async function PUT(request: NextRequest) {
       const isLegacyProductChanging = originalProductId !== effectiveProductId || originalVariantId !== effectiveVariantId
       const targetInventoryItemVariantId = hasInvVariant
         ? (inventory_item_variant_id === undefined
-            ? (isLegacyProductChanging ? null : originalInventoryItemVariantId)
-            : requestedInventoryItemVariantId)
+          ? (isLegacyProductChanging ? null : originalInventoryItemVariantId)
+          : requestedInventoryItemVariantId)
         : null
 
       const requestedUnitCost = unit_cost === undefined
@@ -734,44 +745,44 @@ export async function PUT(request: NextRequest) {
           : 'UPDATE sales SET project_id = $1, cycle_id = $2, product_id = $3, variant_id = $4, customer_name = $5, customer_id = $6, quantity = $7, unit_cost = $8, price = $9, status = $10, cash_at_hand = $11, balance = $12, amount = $13, amount_org_ccy = $14, sale_date = $15 WHERE id = $16 AND organization_id = $17 RETURNING *',
         hasInvVariant
           ? [
-              effectiveProjectId,
-              targetCycleId,
-              effectiveProductId,
-              effectiveVariantId,
-              targetInventoryItemVariantId,
-              customerName,
-              customerId,
-              safeQuantity,
-              effectiveUnitCost,
-              effectivePrice,
-              effectiveStatus,
-              effectiveCashAtHand,
-              effectiveBalance,
-              amount,
-              amountOrgCcy,
-              effectiveSaleDate,
-              id,
-              organizationId,
-            ]
+            effectiveProjectId,
+            targetCycleId,
+            effectiveProductId,
+            effectiveVariantId,
+            targetInventoryItemVariantId,
+            customerName,
+            customerId,
+            safeQuantity,
+            effectiveUnitCost,
+            effectivePrice,
+            effectiveStatus,
+            effectiveCashAtHand,
+            effectiveBalance,
+            amount,
+            amountOrgCcy,
+            effectiveSaleDate,
+            id,
+            organizationId,
+          ]
           : [
-              effectiveProjectId,
-              targetCycleId,
-              effectiveProductId,
-              effectiveVariantId,
-              customerName,
-              customerId,
-              safeQuantity,
-              effectiveUnitCost,
-              effectivePrice,
-              effectiveStatus,
-              effectiveCashAtHand,
-              effectiveBalance,
-              amount,
-              amountOrgCcy,
-              effectiveSaleDate,
-              id,
-              organizationId,
-            ]
+            effectiveProjectId,
+            targetCycleId,
+            effectiveProductId,
+            effectiveVariantId,
+            customerName,
+            customerId,
+            safeQuantity,
+            effectiveUnitCost,
+            effectivePrice,
+            effectiveStatus,
+            effectiveCashAtHand,
+            effectiveBalance,
+            amount,
+            amountOrgCcy,
+            effectiveSaleDate,
+            id,
+            organizationId,
+          ]
       )
 
       if (originalProductId === effectiveProductId && originalVariantId === effectiveVariantId) {

@@ -93,6 +93,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      const result = await db.query(
+        'SELECT id, method_name AS payment_method, description, organization_id FROM payment_methods WHERE organization_id = $1 AND id = $2',
+        [user.organizationId, id]
+      );
+      return NextResponse.json({
+        status: 'success',
+        payment_methods: result.rows,
+      });
+    }
+
     const result = await db.query(
       'SELECT id, method_name AS payment_method, description, organization_id FROM payment_methods WHERE organization_id = $1 ORDER BY method_name',
       [user.organizationId]

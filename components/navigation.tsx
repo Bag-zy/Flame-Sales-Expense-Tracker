@@ -11,28 +11,28 @@ import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
   Bot,
-  Repeat,
   Package,
   Wallet,
   ShoppingCart,
-  Users,
-  FileText,
-  Receipt,
   BarChart3,
   Settings,
+  FileText,
+  Briefcase,
+  CreditCard,
+  TrendingUp,
 } from 'lucide-react'
+import { useAssistant } from '@/lib/context/assistant-context'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Docs', href: '/docs', icon: FileText },
   { name: 'Assistant', href: '/assistant', icon: Bot },
-  { name: 'Cycles', href: '/cycles', icon: Repeat },
+  { name: 'Workspace', href: '/workspace-management', icon: Briefcase },
   { name: 'Inventory', href: '/inventory', icon: Package },
-  { name: 'Expenses', href: '/expenses', icon: Wallet },
-  { name: 'Sales', href: '/sales', icon: ShoppingCart },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Invoices', href: '/invoices', icon: FileText },
-  { name: 'Receipts', href: '/receipts', icon: Receipt },
+  { name: 'Expense Mgmt', href: '/expense-management', icon: CreditCard },
+  { name: 'Sales Mgmt', href: '/sales-management', icon: TrendingUp },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
@@ -82,6 +82,8 @@ export function Navigation() {
     label: cycle.cycle_name,
   }))
 
+  const { isAssistantOpen, toggleAssistant } = useAssistant()
+
   return (
     <>
       <Navbar12
@@ -117,7 +119,7 @@ export function Navigation() {
                   value={selectedOrganization}
                   onChange={(v) => setSelectedOrganization(v)}
                   actionLabel="+ Add organization"
-                  onAction={() => router.push('/setup')}
+                  onAction={() => router.push('/workspace-management?tab=organizations&action=new')}
                   placeholder="Select organization..."
                   searchPlaceholder="Search organization..."
                   emptyText="No organization found."
@@ -137,7 +139,7 @@ export function Navigation() {
                     }
                   }}
                   actionLabel="+ Add project"
-                  onAction={() => router.push('/projects?new=1')}
+                  onAction={() => router.push('/workspace-management?tab=projects&action=new')}
                   placeholder="All projects"
                   searchPlaceholder="Search project..."
                   emptyText="No project found."
@@ -153,7 +155,7 @@ export function Navigation() {
                   actionLabel={selectedProject ? '+ Add cycle' : undefined}
                   onAction={
                     selectedProject
-                      ? () => router.push('/cycles?new=1')
+                      ? () => router.push('/workspace-management?tab=cycles&action=new')
                       : undefined
                   }
                   placeholder={selectedProject ? 'All cycles' : 'Select project first'}
@@ -163,6 +165,15 @@ export function Navigation() {
                   disabled={!selectedProject}
                 />
               </div>
+              <Button
+                variant={isAssistantOpen ? "secondary" : "ghost"}
+                size="icon"
+                className="h-9 w-9 ml-2"
+                onClick={toggleAssistant}
+                title={isAssistantOpen ? "Hide Assistant" : "Show Assistant"}
+              >
+                <Bot className={cn("h-5 w-5", isAssistantOpen && "text-primary")} />
+              </Button>
             </div>
           </>
         }

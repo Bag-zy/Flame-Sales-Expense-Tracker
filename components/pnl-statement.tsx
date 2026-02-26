@@ -33,10 +33,13 @@ interface Expense {
   description?: string | null;
   amount?: number | string;
   amount_org_ccy?: number | string | null;
+  inventory_item_id?: number | null;
+  status?: string | null;
 }
 
 interface ExpenseCategory {
   id: number;
+  category_name?: string;
   project_category_id?: number | null;
 }
 
@@ -66,12 +69,13 @@ function escapeHtml(value: string): string {
 }
 
 export function PnlStatement() {
-  const { selectedProject, selectedCycle, projects, currentCurrencyCode } = useFilter();
+  const { selectedProject, selectedCycle, projects, currentCurrencyCode, selectedOrganization } = useFilter();
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
   const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
+  const [itemMap, setItemMap] = useState<Map<number, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
   const currencyCode = currentCurrencyCode || 'USD';
@@ -143,6 +147,23 @@ export function PnlStatement() {
     loadData();
   }, [selectedProject, selectedCycle]);
 
+  useEffect(() => {
+    if (selectedOrganization) {
+      fetch(`/api/v1/inventory-items?organization_id=${selectedOrganization}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.inventory_items) {
+            const entries: [number, string][] = data.inventory_items.map((i: any) => [i.id as number, i.name as string]);
+            const map = new Map<number, string>(entries);
+            setItemMap(map);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to load inventory items:', error);
+        });
+    }
+  }, [selectedOrganization]);
+
   const getSaleAmount = useCallback((sale: Sale) => {
     if (isOrgLevelView) {
       const converted = toNumber(sale.amount_org_ccy);
@@ -204,34 +225,36 @@ export function PnlStatement() {
     return map;
   }, [expenseCategories]);
 
-  const cogsProjectCategoryId = useMemo(() => {
-    return getProjectCategoryIdByName(projectCategories, 'cogs') ?? null;
+  const inventoryProjectCategoryId = useMemo(() => {
+    return getProjectCategoryIdByName(projectCategories, 'inventory') ?? getProjectCategoryIdByName(projectCategories, 'cogs') ?? null;
   }, [projectCategories]);
 
   const operatingProjectCategoryId = useMemo(() => {
     return getProjectCategoryIdByName(projectCategories, 'operating expenses') ?? null;
   }, [projectCategories]);
 
-  const cogsExpenseItems: LineItem[] = useMemo(() => {
+  const inventoryExpenseItems: LineItem[] = useMemo(() => {
     const list: LineItem[] = [];
     for (const e of expenses) {
       const categoryId = e.category_id ?? null;
       if (!categoryId) continue;
       const cat = categoryById.get(Number(categoryId));
       if (!cat) continue;
-      if (!cogsProjectCategoryId) continue;
-      if (cat.project_category_id !== cogsProjectCategoryId) continue;
+      if (!inventoryProjectCategoryId) continue;
+      if (cat.project_category_id !== inventoryProjectCategoryId) continue;
 
       const amt = getExpenseAmount(e);
       if (!amt) continue;
 
-      list.push({
-        label: String(e.expense_name || e.description || 'Expense'),
-        amount: amt,
-      });
+      const existing = list.find((item) => item.label === (itemMap.get(Number(e.inventory_item_id)) || (cat.category_name || 'Unknown Category')));
+      if (existing) {
+        existing.amount += amt;
+      } else {
+        list.push({ label: itemMap.get(Number(e.inventory_item_id)) || (cat.category_name || 'Unknown Category'), amount: amt });
+      }
     }
     return list.sort((a, b) => b.amount - a.amount);
-  }, [categoryById, cogsProjectCategoryId, expenses, getExpenseAmount]);
+  }, [categoryById, inventoryProjectCategoryId, expenses, getExpenseAmount]);
 
   const operatingExpenseItems: LineItem[] = useMemo(() => {
     const list: LineItem[] = [];
@@ -261,17 +284,21 @@ export function PnlStatement() {
     }));
   }, [expenses, getExpenseAmount]);
 
-  const { totalCogs, totalOperatingExpenses } = useMemo(() => {
-    return calcExpenseTotalsByProjectCategory(
+  const { totalInventory, totalOperatingExpenses } = useMemo(() => {
+    const totals = calcExpenseTotalsByProjectCategory(
       normalizedExpensesForTotals,
       expenseCategories,
-      projectCategories,
+      projectCategories
     );
+    return {
+      totalInventory: totals.totalCogs,
+      totalOperatingExpenses: totals.totalOperatingExpenses
+    };
   }, [expenseCategories, normalizedExpensesForTotals, projectCategories]);
 
   const grossProfit = useMemo(() => {
-    return calcGrossProfit(netSalesTotal, totalCogs);
-  }, [netSalesTotal, totalCogs]);
+    return calcGrossProfit(netSalesTotal, totalInventory);
+  }, [netSalesTotal, totalInventory]);
 
   const netProfitLoss = useMemo(() => {
     return calcNetProfitFromGrossProfit(grossProfit, totalOperatingExpenses);
@@ -292,7 +319,7 @@ export function PnlStatement() {
       )
       .join('');
 
-    const cogsRows = cogsExpenseItems
+    const inventoryRows = inventoryExpenseItems
       .map(
         (item) =>
           `<tr><td class="label">${escapeHtml(item.label)}</td><td class="amount">${format(item.amount)}</td></tr>`,
@@ -344,9 +371,9 @@ export function PnlStatement() {
     </div>
 
     <div class="section">
-      <div class="section-title"><span>COGS</span><span>${format(totalCogs)}</span></div>
+      <div class="section-title"><span>Inventory</span><span>${format(totalInventory)}</span></div>
       <table>
-        ${cogsRows || '<tr><td class="label">No COGS expenses found.</td><td class="amount"></td></tr>'}
+        ${inventoryRows || '<tr><td class="label">No inventory expenses found.</td><td class="amount"></td></tr>'}
       </table>
     </div>
 
@@ -426,14 +453,14 @@ export function PnlStatement() {
 
           <div>
             <div className="flex items-center justify-between border-b pb-2">
-              <div className="text-sm font-semibold">COGS</div>
-              <div className="text-sm font-semibold tabular-nums">{formatter.format(totalCogs)}</div>
+              <div className="text-sm font-semibold">Inventory</div>
+              <div className="text-sm font-semibold tabular-nums">{formatter.format(totalInventory)}</div>
             </div>
             <div className="mt-3 space-y-2">
-              {cogsExpenseItems.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No COGS expenses found.</div>
+              {inventoryExpenseItems.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No inventory expenses found.</div>
               ) : (
-                cogsExpenseItems.map((item, idx) => (
+                inventoryExpenseItems.map((item, idx) => (
                   <div key={`${item.label}-${idx}`} className="flex items-start justify-between gap-4 text-sm">
                     <div className="text-muted-foreground">{item.label}</div>
                     <div className="tabular-nums">{formatter.format(item.amount)}</div>

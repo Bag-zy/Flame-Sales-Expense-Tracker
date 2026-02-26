@@ -8,23 +8,21 @@ import { AuthGuard } from '@/components/auth-guard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useFilter } from '@/lib/context/filter-context'
 
-import { InventoryItemsPanel } from '@/components/inventory/inventory-items-panel'
 import { RawMaterialsPanel } from '@/components/inventory/raw-materials-panel'
 import { WorkInProgressPanel } from '@/components/inventory/work-in-progress-panel'
 import { FinishedGoodsPanel } from '@/components/inventory/finished-goods-panel'
 import { InventoryLogPanel } from '@/components/inventory/inventory-log-panel'
-import { OpeningStockPanel } from '@/components/inventory/opening-stock-panel'
 import { ProductionOrdersPanel } from '@/components/inventory/production-orders-panel'
 
 export default function InventoryPage() {
   const { selectedProject, selectedCycle } = useFilter()
-  const [activeTab, setActiveTab] = useState('items')
+  const [activeTab, setActiveTab] = useState('raw')
   const searchParams = useSearchParams()
 
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (!tab) return
-    if (tab === 'items' || tab === 'raw' || tab === 'wip' || tab === 'finished' || tab === 'opening' || tab === 'production' || tab === 'log') {
+    if (tab === 'raw' || tab === 'wip' || tab === 'finished' || tab === 'production' || tab === 'log') {
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -35,7 +33,7 @@ export default function InventoryPage() {
       return
     }
     if (!selectedCycle) {
-      toast.message('Select a cycle to view balances and post opening stock.')
+      toast.message('Select a cycle to view balances.')
     }
   }, [selectedProject, selectedCycle])
 
@@ -48,18 +46,12 @@ export default function InventoryPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full justify-start">
-            <TabsTrigger value="items">Items</TabsTrigger>
             <TabsTrigger value="raw">Raw Materials</TabsTrigger>
             <TabsTrigger value="wip">WIP</TabsTrigger>
             <TabsTrigger value="finished">Products / Finished Goods</TabsTrigger>
-            <TabsTrigger value="opening">Opening Stock</TabsTrigger>
             <TabsTrigger value="production">Production Orders</TabsTrigger>
             <TabsTrigger value="log">Inventory Log</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="items">
-            <InventoryItemsPanel />
-          </TabsContent>
 
           <TabsContent value="raw">
             <RawMaterialsPanel />
@@ -71,10 +63,6 @@ export default function InventoryPage() {
 
           <TabsContent value="finished">
             <FinishedGoodsPanel />
-          </TabsContent>
-
-          <TabsContent value="opening">
-            <OpeningStockPanel />
           </TabsContent>
 
           <TabsContent value="production">

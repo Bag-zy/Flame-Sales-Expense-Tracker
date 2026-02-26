@@ -2,21 +2,26 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Trash2 } from 'lucide-react'
+import { ArrowRight, BarChart3, Building2, Calendar, CheckCircle2, Clock, Plus, Trash2 } from 'lucide-react'
 
 import { useFilter } from '@/lib/context/filter-context'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+
+import { ProductionOrderDetails } from '@/components/inventory/production-order-details'
 
 type VariantOption = {
   id: number
   label: string
   itemName: string
   typeCode: string
+  quantityOnHand?: number
+  unitCost?: number | null
 }
 
 type ProductionOrder = {
@@ -67,6 +72,7 @@ export function ProductionOrdersPanel() {
 
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
 
   const [outputVariantId, setOutputVariantId] = useState('')
   const [outputQty, setOutputQty] = useState('')
@@ -124,18 +130,24 @@ export function ProductionOrdersPanel() {
         throw new Error(data?.message || 'Failed to load inventory variants')
       }
 
-      const out: VariantOption[] = []
+      const outMap = new Map<string, VariantOption>()
       for (const item of data.items || []) {
         for (const v of item.variants || []) {
-          out.push({
-            id: Number(v.id),
-            label: v.label || v.sku || `#${v.id}`,
-            itemName: item.name,
-            typeCode: item.type_code,
-          })
+          const label = v.label || v.sku || `#${v.id}`
+          const key = `${item.name.toLowerCase()} / ${label.toLowerCase()}`
+          if (!outMap.has(key)) {
+            outMap.set(key, {
+              id: Number(v.id),
+              label: label,
+              itemName: item.name,
+              typeCode: item.type_code,
+              quantityOnHand: Number(v.quantity_on_hand || 0),
+              unitCost: v.avg_unit_cost != null ? Number(v.avg_unit_cost) : (v.unit_cost != null ? Number(v.unit_cost) : null),
+            })
+          }
         }
       }
-      setVariantOptions(out)
+      setVariantOptions(Array.from(outMap.values()))
     } catch (e) {
       setVariantOptions([])
     }
@@ -248,8 +260,23 @@ export function ProductionOrdersPanel() {
     }
   }
 
+  if (selectedOrderId) {
+    const order = orders.find(o => o.id === selectedOrderId)
+    if (order) {
+      return (
+        <ProductionOrderDetails
+          order={order}
+          onBack={() => setSelectedOrderId(null)}
+          onComplete={completeOrder}
+          onDelete={deleteOrder}
+          variantById={variantById as any}
+        />
+      )
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {!canUse ? (
         <Card>
           <CardHeader>
@@ -261,201 +288,230 @@ export function ProductionOrdersPanel() {
         </Card>
       ) : (
         <>
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold tracking-tight">Production Orders</h2>
+              <p className="text-sm text-muted-foreground">Manage and track your manufacturing assembly process.</p>
+            </div>
             <Button onClick={() => setShowCreate(true)}>
               <Plus className="w-4 h-4 mr-2" />
               New Production Order
             </Button>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{loading ? 'Loading...' : 'Production Orders'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-sm text-muted-foreground">Loading orders...</div>
-              ) : orders.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No production orders yet.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-border text-sm">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-foreground">Order</th>
-                        <th className="px-4 py-2 text-left font-semibold text-foreground">Output</th>
-                        <th className="px-4 py-2 text-left font-semibold text-foreground">Status</th>
-                        <th className="px-4 py-2 text-right font-semibold text-foreground">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                      {orders.map((o) => {
-                        const outOpt = variantById.get(Number(o.output_inventory_item_variant_id))
-                        const outLabel = outOpt
-                          ? `${outOpt.itemName} / ${outOpt.label}`
-                          : `Variant #${o.output_inventory_item_variant_id}`
-
-                        return (
-                          <tr key={o.id} className="hover:bg-muted/50">
-                            <td className="px-4 py-2 whitespace-nowrap">#{o.id}</td>
-                            <td className="px-4 py-2">
-                              <div className="font-medium">{outLabel}</div>
-                              <div className="text-xs text-muted-foreground">
-                                Qty: {Number(o.output_quantity ?? 0).toLocaleString()}
-                                {o.output_unit_cost == null ? '' : ` | Unit cost: ${Number(o.output_unit_cost).toLocaleString()}`}
-                              </div>
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <span className="inline-flex rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground">
-                                {String(o.status || 'DRAFT')}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-right">
-                              <div className="inline-flex gap-2">
-                                {String(o.status) !== 'COMPLETED' ? (
-                                  <Button variant="outline" size="sm" onClick={() => completeOrder(o.id)}>
-                                    Complete
-                                  </Button>
-                                ) : null}
-                                <Button variant="outline" size="sm" onClick={() => deleteOrder(o.id)}>
-                                  Delete
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Create Production Order</DialogTitle>
-              </DialogHeader>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Output Item Variant</Label>
-                  <Select value={outputVariantId} onValueChange={setOutputVariantId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select output" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {variantOptions
-                        .filter((v) => v.typeCode === 'WORK_IN_PROGRESS' || v.typeCode === 'FINISHED_GOODS')
-                        .map((v) => (
-                          <SelectItem key={String(v.id)} value={String(v.id)}>
-                            {v.itemName} / {v.label} ({v.typeCode})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Output Quantity</Label>
-                  <Input type="number" value={outputQty} onChange={(e) => setOutputQty(e.target.value)} />
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="animate-pulse bg-muted/50 h-48" />
+              ))
+            ) : orders.length === 0 ? (
+              <div className="col-span-full bg-card rounded-lg border border-dashed p-12 text-center">
+                <BarChart3 className="w-12 h-12 mx-auto text-muted-foreground opacity-20 mb-4" />
+                <p className="text-muted-foreground">No production orders yet for this cycle.</p>
               </div>
+            ) : (
+              orders.map((o) => {
+                const outOpt = variantById.get(Number(o.output_inventory_item_variant_id))
+                const outLabel = outOpt ? outOpt.label : 'Default'
+                const outItem = outOpt ? outOpt.itemName : `Item #${o.output_inventory_item_variant_id}`
 
-              <div className="space-y-2">
-                <Label>Inputs</Label>
-                <div className="space-y-3">
-                  {inputs.map((r) => (
-                    <div key={r.rowId} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                      <div className="md:col-span-6">
-                        <Select
-                          value={r.input_inventory_item_variant_id}
-                          onValueChange={(v) =>
-                            setInputs((prev) => prev.map((x) => (x.rowId === r.rowId ? { ...x, input_inventory_item_variant_id: v } : x)))
-                          }
+                const isCompleted = String(o.status) === 'COMPLETED'
+
+                return (
+                  <Card key={o.id} className="group hover:shadow-md transition-all border-border/60">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Order #{o.id}</span>
+                          <CardTitle className="text-lg font-bold truncate max-w-[180px]">{outItem}</CardTitle>
+                          <CardDescription className="flex items-center text-xs">
+                            <Clock className="w-3 h-3 mr-1 opacity-60" />
+                            {new Date(o.created_at).toLocaleDateString()}
+                          </CardDescription>
+                        </div>
+                        <Badge
+                          variant={isCompleted ? "default" : "secondary"}
+                          className={isCompleted ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select input" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {variantOptions
-                              .filter((v) => v.typeCode === 'RAW_MATERIAL' || v.typeCode === 'WORK_IN_PROGRESS')
-                              .map((v) => (
-                                <SelectItem key={String(v.id)} value={String(v.id)}>
-                                  {v.itemName} / {v.label} ({v.typeCode})
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                          {String(o.status || 'DRAFT').replace('_', ' ')}
+                        </Badge>
                       </div>
+                    </CardHeader>
 
-                      <div className="md:col-span-3">
-                        <Input
-                          type="number"
-                          placeholder="Qty"
-                          value={r.quantity_required}
-                          onChange={(e) =>
-                            setInputs((prev) => prev.map((x) => (x.rowId === r.rowId ? { ...x, quantity_required: e.target.value } : x)))
-                          }
-                        />
+                    <CardContent className="pb-4">
+                      <div className="p-3 bg-muted/40 rounded-lg space-y-2 border border-border/50">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Variant</span>
+                          <span className="font-semibold">{outLabel}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground font-medium">Output Qty</span>
+                          <span className="text-sm font-black text-primary">
+                            {Number(o.output_quantity).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
+                    </CardContent>
 
-                      <div className="md:col-span-2">
-                        <Input
-                          type="number"
-                          step="0.0001"
-                          placeholder="Unit cost (optional)"
-                          value={r.unit_cost_override}
-                          onChange={(e) =>
-                            setInputs((prev) => prev.map((x) => (x.rowId === r.rowId ? { ...x, unit_cost_override: e.target.value } : x)))
-                          }
-                        />
-                      </div>
-
-                      <div className="md:col-span-1 flex justify-end">
-                        <Button
-                          variant="outline"
-                          type="button"
-                          onClick={() => setInputs((prev) => prev.filter((x) => x.rowId !== r.rowId))}
-                          disabled={inputs.length === 1}
-                        >
-                          <Trash2 className="h-4 w-4" />
+                    <CardFooter className="pt-0 flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setSelectedOrderId(o.id)} className="flex-1 text-xs">
+                        View Details
+                      </Button>
+                      {!isCompleted && (
+                        <Button variant="default" size="sm" onClick={() => completeOrder(o.id)} className="px-3 bg-green-600 hover:bg-green-700">
+                          <CheckCircle2 className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={() =>
-                      setInputs((prev) => [
-                        ...prev,
-                        { rowId: uid(), input_inventory_item_variant_id: '', quantity_required: '', unit_cost_override: '' },
-                      ])
-                    }
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add input
-                  </Button>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setShowCreate(false)} disabled={creating}>
-                  Cancel
-                </Button>
-                <Button type="button" onClick={createOrder} disabled={creating}>
-                  {creating ? 'Creating...' : 'Create'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => deleteOrder(o.id)} className="px-2 text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                )
+              })
+            )}
+          </div>
         </>
       )}
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Create Production Order</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Output Item Variant</Label>
+              <Select value={outputVariantId} onValueChange={setOutputVariantId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select output" />
+                </SelectTrigger>
+                <SelectContent>
+                  {variantOptions
+                    .filter((v) => v.typeCode === 'WORK_IN_PROGRESS' || v.typeCode === 'FINISHED_GOODS')
+                    .map((v) => (
+                      <SelectItem key={String(v.id)} value={String(v.id)}>
+                        {v.itemName} / {v.label} ({v.typeCode})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Output Quantity</Label>
+              <Input type="number" value={outputQty} onChange={(e) => setOutputQty(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Inputs</Label>
+            <div className="space-y-3">
+              {inputs.map((r) => (
+                <div key={r.rowId} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                  <div className="md:col-span-6">
+                    <Select
+                      value={r.input_inventory_item_variant_id}
+                      onValueChange={(v) => {
+                        const opt = variantById.get(Number(v))
+                        setInputs((prev) =>
+                          prev.map((x) =>
+                            x.rowId === r.rowId
+                              ? {
+                                ...x,
+                                input_inventory_item_variant_id: v,
+                                unit_cost_override: opt?.unitCost != null ? String(opt.unitCost) : x.unit_cost_override,
+                              }
+                              : x,
+                          ),
+                        )
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select input" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {variantOptions
+                          .filter((v) => v.typeCode === 'RAW_MATERIAL' || v.typeCode === 'WORK_IN_PROGRESS')
+                          .map((v) => (
+                            <SelectItem key={String(v.id)} value={String(v.id)}>
+                              {v.itemName} / {v.label} ({v.typeCode})
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {r.input_inventory_item_variant_id && (
+                      <div className="text-[10px] text-muted-foreground mt-1 px-1">
+                        In stock: <span className="font-bold text-foreground">{(variantById.get(Number(r.input_inventory_item_variant_id))?.quantityOnHand ?? 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <Input
+                      type="number"
+                      placeholder="Qty"
+                      value={r.quantity_required}
+                      onChange={(e) =>
+                        setInputs((prev) => prev.map((x) => (x.rowId === r.rowId ? { ...x, quantity_required: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      placeholder="Unit cost (optional)"
+                      value={r.unit_cost_override}
+                      onChange={(e) =>
+                        setInputs((prev) => prev.map((x) => (x.rowId === r.rowId ? { ...x, unit_cost_override: e.target.value } : x)))
+                      }
+                    />
+                  </div>
+
+                  <div className="md:col-span-1 flex justify-end">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => setInputs((prev) => prev.filter((x) => x.rowId !== r.rowId))}
+                      disabled={inputs.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() =>
+                  setInputs((prev) => [
+                    ...prev,
+                    { rowId: uid(), input_inventory_item_variant_id: '', quantity_required: '', unit_cost_override: '' },
+                  ])
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add input
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => setShowCreate(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={createOrder} disabled={creating}>
+              {creating ? 'Creating...' : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

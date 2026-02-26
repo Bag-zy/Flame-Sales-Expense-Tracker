@@ -1,256 +1,375 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import { TrendingUp, BarChart3 } from 'lucide-react';
 import { AuthGuard } from '@/components/auth-guard';
-import { TrendsChart } from '@/components/charts/trends-chart';
 import { PnlByProjectChart } from '@/components/charts/pnl-by-project-chart';
-import { SalesBreakdownChart } from '@/components/charts/sales-breakdown-chart';
-import { BudgetVsActualChart } from '@/components/charts/budget-vs-actual-chart';
-import { ExpensesByCategoryChart } from '@/components/expenses-by-category-chart';
-import { PnlStatement } from '@/components/pnl-statement';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { PnlStatement, PnlData, exportPnlToPdf, PnlSummaryCard } from '@/components/pnl';
 import { useFilter } from '@/lib/context/filter-context';
+import {
+  calcExpenseTotalsByProjectCategory,
+  calcGrossProfit,
+  calcNetProfitFromGrossProfit,
+  getProjectCategoryIdByName,
+} from '@/lib/accounting/formulas';
 
-interface ReportSummary {
-  totalRevenue: number;
-  totalExpenses: number;
-  netProfit: number;
-  monthlyTrends: Array<{
-    month: string;
-    totalRevenue: number;
-    totalExpenses: number;
-  }>;
-  totalBudgetAllotment: number;
+interface Sale {
+  id: number;
+  product_id?: number | null;
+  quantity?: number;
+  price?: number;
+  amount?: number | string;
+  amount_org_ccy?: number | string | null;
+  status?: string | null;
 }
 
-type ReportView = 'overview' | 'pnl' | 'expenses' | 'sales' | 'budget';
+interface Product {
+  id: number;
+  product_name: string;
+}
 
-function ReportsPageContent() {
-  const { selectedOrganization, selectedProject, selectedCycle, projects, cycles, currentCurrencyCode } = useFilter();
-  const [summary, setSummary] = useState<ReportSummary | null>(null);
-  const [reportLoading, setReportLoading] = useState(true);
-  const [activeView, setActiveView] = useState<ReportView>('overview');
+interface Expense {
+  id: number;
+  category_id?: number | null;
+  expense_name?: string | null;
+  description?: string | null;
+  amount?: number | string;
+  amount_org_ccy?: number | string | null;
+}
+
+interface ExpenseCategory {
+  id: number;
+  category_name: string;
+  project_category_id?: number | null;
+}
+
+interface ProjectCategory {
+  id: number;
+  category_name: string;
+}
+
+interface PnlLineItem {
+  label: string;
+  amount: number;
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export default function ReportsPage() {
+  const { selectedProject, selectedCycle, projects, currentCurrencyCode } = useFilter();
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+  const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const currencyCode = currentCurrencyCode || 'USD';
+  const isOrgLevelView = !selectedProject;
+
+  const selectedProjectName = useMemo(() => {
+    if (!selectedProject) return 'All projects';
+    const project = projects.find((p) => String(p.id) === String(selectedProject));
+    return project?.project_name || 'Selected project';
+  }, [projects, selectedProject]);
 
   useEffect(() => {
-    loadReportSummary();
-  }, [selectedOrganization, selectedProject, selectedCycle]);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const salesUrl = new URL('/api/v1/sales', window.location.origin);
+        salesUrl.searchParams.set('status', 'completed');
+        salesUrl.searchParams.set('limit', '5000');
+        if (selectedProject) salesUrl.searchParams.set('project_id', selectedProject);
+        if (selectedCycle) salesUrl.searchParams.set('cycle_id', selectedCycle);
 
-  const loadReportSummary = async () => {
-    setReportLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (selectedOrganization) {
-        params.append('orgId', selectedOrganization);
-      }
-      if (selectedProject) {
-        params.append('projectId', selectedProject);
-      }
-      if (selectedCycle) {
-        params.append('cycleId', selectedCycle);
-      }
+        const expenseUrl = new URL('/api/v1/expenses', window.location.origin);
+        expenseUrl.searchParams.set('limit', '5000');
+        if (selectedProject) expenseUrl.searchParams.set('project_id', selectedProject);
+        if (selectedCycle) expenseUrl.searchParams.set('cycle_id', selectedCycle);
 
-      const response = await fetch(`/api/v1/reports/summary?${params.toString()}`);
-      const data = await response.json();
+        const categoriesUrl = new URL('/api/v1/expense-categories', window.location.origin);
+        if (selectedProject) categoriesUrl.searchParams.set('projectId', selectedProject);
 
-      if (data.status === 'success') {
-        setSummary(data);
+        const projectCategoriesUrl = new URL('/api/v1/project-categories', window.location.origin);
+        if (selectedProject) projectCategoriesUrl.searchParams.set('projectId', selectedProject);
+
+        const [salesRes, productsRes, expensesRes, categoriesRes, projectCategoriesRes] = await Promise.all([
+          fetch(salesUrl.toString()),
+          fetch('/api/v1/products'),
+          fetch(expenseUrl.toString()),
+          fetch(categoriesUrl.toString()),
+          fetch(projectCategoriesUrl.toString()),
+        ]);
+
+        const [salesData, productsData, expensesData, categoriesData, projectCategoriesData] = await Promise.all([
+          salesRes.json(),
+          productsRes.json(),
+          expensesRes.json(),
+          categoriesRes.json(),
+          projectCategoriesRes.json(),
+        ]);
+
+        setSales(salesData.status === 'success' ? (salesData.sales || []) : []);
+        setProducts(productsData.status === 'success' ? (productsData.products || []) : []);
+        setExpenses(expensesData.status === 'success' ? (expensesData.expenses || []) : []);
+        setExpenseCategories(categoriesData.status === 'success' ? (categoriesData.categories || []) : []);
+        setProjectCategories(projectCategoriesData.status === 'success' ? (projectCategoriesData.categories || []) : []);
+      } catch {
+        setSales([]);
+        setProducts([]);
+        setExpenses([]);
+        setExpenseCategories([]);
+        setProjectCategories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [selectedProject, selectedCycle]);
+
+  const getSaleAmount = useCallback((sale: Sale) => {
+    if (isOrgLevelView) {
+      const converted = toNumber(sale.amount_org_ccy);
+      if (converted) return converted;
+    }
+    const raw = toNumber(sale.amount);
+    if (raw) return raw;
+    return toNumber(sale.quantity) * toNumber(sale.price);
+  }, [isOrgLevelView]);
+
+  const getExpenseAmount = useCallback((expense: Expense) => {
+    if (isOrgLevelView) {
+      const converted = toNumber(expense.amount_org_ccy);
+      if (converted) return converted;
+    }
+    return toNumber(expense.amount);
+  }, [isOrgLevelView]);
+
+  const netSalesItems: PnlLineItem[] = useMemo(() => {
+    const byProductId = new Map<number, number>();
+
+    for (const s of sales) {
+      if (String(s.status || '').toLowerCase() !== 'completed') continue;
+      const productId = typeof s.product_id === 'number' ? s.product_id : null;
+      if (!productId) continue;
+      const amt = getSaleAmount(s);
+      if (!amt) continue;
+
+      const prev = byProductId.get(productId) ?? 0;
+      byProductId.set(productId, prev + amt);
+    }
+
+    const nameById = new Map<number, string>();
+    for (const p of products) {
+      if (typeof p?.id === 'number') {
+        nameById.set(p.id, p.product_name);
+      }
+    }
+
+    return Array.from(byProductId.entries())
+      .map(([productId, amount]) => ({
+        label: nameById.get(productId) || 'Unknown product',
+        amount,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [products, sales, getSaleAmount]);
+
+  const netSalesTotal = useMemo(() => {
+    return netSalesItems.reduce((sum, item) => sum + item.amount, 0);
+  }, [netSalesItems]);
+
+  const categoryById = useMemo(() => {
+    const map = new Map<number, ExpenseCategory>();
+    for (const c of expenseCategories) {
+      if (typeof c?.id === 'number') {
+        map.set(c.id, c);
+      }
+    }
+    return map;
+  }, [expenseCategories]);
+
+  const inventoryProjectCategoryId = useMemo(() => {
+    return getProjectCategoryIdByName(projectCategories, 'inventory') ?? getProjectCategoryIdByName(projectCategories, 'cogs') ?? null;
+  }, [projectCategories]);
+
+  const operatingProjectCategoryId = useMemo(() => {
+    return getProjectCategoryIdByName(projectCategories, 'operating expenses') ?? null;
+  }, [projectCategories]);
+
+  const inventoryExpenseItems: PnlLineItem[] = useMemo(() => {
+    const list: PnlLineItem[] = [];
+    for (const e of expenses) {
+      const categoryId = e.category_id ?? null;
+      if (!categoryId) continue;
+      const cat = categoryById.get(Number(categoryId));
+      if (!cat) continue;
+      if (!inventoryProjectCategoryId) continue;
+      if (cat.project_category_id !== inventoryProjectCategoryId) continue;
+
+      const amt = getExpenseAmount(e);
+      if (!amt) continue;
+
+      const existing = list.find((item) => item.label === cat.category_name);
+      if (existing) {
+        existing.amount += amt;
       } else {
-        toast.error(data.message || 'Failed to load report summary');
-        setSummary(null);
+        list.push({ label: cat.category_name, amount: amt });
       }
-    } catch (error) {
-      toast.error('Failed to load report summary');
-      setSummary(null);
-    } finally {
-      setReportLoading(false);
     }
+    return list.sort((a, b) => b.amount - a.amount);
+  }, [categoryById, inventoryProjectCategoryId, expenses, getExpenseAmount]);
+
+  const operatingExpenseItems: PnlLineItem[] = useMemo(() => {
+    const list: PnlLineItem[] = [];
+    for (const e of expenses) {
+      const categoryId = e.category_id ?? null;
+      if (!categoryId) continue;
+      const cat = categoryById.get(Number(categoryId));
+      if (!cat) continue;
+      if (!operatingProjectCategoryId) continue;
+      if (cat.project_category_id !== operatingProjectCategoryId) continue;
+
+      const amt = getExpenseAmount(e);
+      if (!amt) continue;
+
+      const existing = list.find((item) => item.label === cat.category_name);
+      if (existing) {
+        existing.amount += amt;
+      } else {
+        list.push({ label: cat.category_name, amount: amt });
+      }
+    }
+    return list.sort((a, b) => b.amount - a.amount);
+  }, [categoryById, operatingProjectCategoryId, expenses, getExpenseAmount]);
+
+  const normalizedExpensesForTotals = useMemo(() => {
+    return expenses.map((e) => ({
+      ...e,
+      amount: getExpenseAmount(e),
+    }));
+  }, [expenses, getExpenseAmount]);
+
+  const { totalInventory, totalOperatingExpenses } = useMemo(() => {
+    const totals = calcExpenseTotalsByProjectCategory(
+      normalizedExpensesForTotals,
+      expenseCategories,
+      projectCategories
+    );
+    return {
+      totalInventory: totals.totalCogs,
+      totalOperatingExpenses: totals.totalOperatingExpenses
+    };
+  }, [expenseCategories, normalizedExpensesForTotals, projectCategories]);
+
+  const grossProfit = useMemo(() => {
+    return calcGrossProfit(netSalesTotal, totalInventory);
+  }, [netSalesTotal, totalInventory]);
+
+  const netProfitLoss = useMemo(() => {
+    return calcNetProfitFromGrossProfit(grossProfit, totalOperatingExpenses);
+  }, [grossProfit, totalOperatingExpenses]);
+
+  const pnlData: PnlData = {
+    netSalesItems,
+    netSalesTotal,
+    cogsItems: inventoryExpenseItems,
+    totalCogs: totalInventory,
+    operatingExpenseItems,
+    totalOperatingExpenses,
+    grossProfit,
+    netProfitLoss,
   };
 
-  const getReportTitle = () => {
-    if (selectedCycle) {
-      const cycle = cycles.find(c => c.id.toString() === selectedCycle);
-      return `Report for Cycle: ${cycle?.cycle_name || '...'}`;
-    }
-    if (selectedProject) {
-      const project = projects.find(p => p.id.toString() === selectedProject);
-      return `Report for Project: ${project?.project_name || '...'}`;
-    }
-    return 'Organization Financial Overview';
+  const handleExportPdf = () => {
+    exportPnlToPdf({
+      data: pnlData,
+      title: 'P&L Statement',
+      subtitle: selectedProjectName,
+      currencyCode,
+    });
   };
-
-  const remainingBudget = summary
-    ? summary.totalBudgetAllotment - summary.totalExpenses
-    : 0;
-  const currencyLabel = currentCurrencyCode || '';
 
   return (
     <AuthGuard>
-      <div className="flex flex-col h-[calc(100vh-8rem)] p-6">
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 flex flex-wrap items-center gap-3 justify-between">
-          <h1 className="text-3xl font-bold">Reports</h1>
-          <h2 className="text-xl font-semibold text-muted-foreground">
-            {getReportTitle()}
-          </h2>
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">P&L Reports</h1>
+              <p className="text-sm text-muted-foreground">
+                Profit and Loss statement for {selectedProjectName}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-          {reportLoading ? (
-            <div className="text-center p-8">Loading report...</div>
-          ) : summary ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                <div className="md:col-span-1">
-                  <RadioGroup
-                    value={activeView}
-                    onValueChange={(value) => setActiveView(value as ReportView)}
-                    className="flex flex-wrap gap-2 md:flex-col md:items-start"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="overview" id="overview" />
-                      <Label htmlFor="overview" className="text-sm">
-                        Overview
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="pnl" id="pnl" />
-                      <Label htmlFor="pnl" className="text-sm">
-                        P&amp;L
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="expenses" id="expenses" />
-                      <Label htmlFor="expenses" className="text-sm">
-                        Expenses by Category
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sales" id="sales" />
-                      <Label htmlFor="sales" className="text-sm">
-                        Sales Breakdown
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="budget" id="budget" />
-                      <Label htmlFor="budget" className="text-sm">
-                        Budget vs Actual
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-                <div className="md:col-span-4">
-                  {activeView === 'overview' && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 md:gap-6">
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className="text-xl font-bold text-green-600 sm:text-2xl">
-                              {currencyLabel
-                                ? `${currencyLabel} ${summary.totalRevenue.toLocaleString()}`
-                                : summary.totalRevenue.toLocaleString()}
-                            </div>
-                          </CardContent>
-                        </Card>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <PnlSummaryCard
+            title="Net Sales"
+            amount={netSalesTotal}
+            currencyCode={currencyCode}
+            trend={netSalesTotal > 0 ? 'up' : 'neutral'}
+            isLoading={isLoading}
+          />
+          <PnlSummaryCard
+            title="Gross Profit"
+            amount={grossProfit}
+            currencyCode={currencyCode}
+            description="Net Sales - Inventory"
+            trend={grossProfit >= 0 ? 'up' : 'down'}
+            isLoading={isLoading}
+          />
+          <PnlSummaryCard
+            title="Operating Expenses"
+            amount={totalOperatingExpenses}
+            currencyCode={currencyCode}
+            trend="down"
+            isLoading={isLoading}
+          />
+          <PnlSummaryCard
+            title="Net Profit / Loss"
+            amount={netProfitLoss}
+            currencyCode={currencyCode}
+            description="Gross Profit - Operating Expenses"
+            trend={netProfitLoss >= 0 ? 'up' : 'down'}
+            isLoading={isLoading}
+          />
+        </div>
 
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className="text-xl font-bold text-red-600 sm:text-2xl">
-                              {currencyLabel
-                                ? `${currencyLabel} ${summary.totalExpenses.toLocaleString()}`
-                                : summary.totalExpenses.toLocaleString()}
-                            </div>
-                          </CardContent>
-                        </Card>
+        {/* P&L Chart and Statement */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                P&L by Project
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PnlByProjectChart />
+            </CardContent>
+          </Card>
 
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
-                            <div className="space-y-1">
-                              <CardTitle className="text-sm font-medium">Net Profit / Loss</CardTitle>
-                              <CardDescription className="text-xs">Revenue - Expenses</CardDescription>
-                            </div>
-                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className={`text-xl font-bold sm:text-2xl ${summary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {currencyLabel
-                                ? `${currencyLabel} ${summary.netProfit.toLocaleString()}`
-                                : summary.netProfit.toLocaleString()}
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-sm font-medium">Budget Allotment</CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className="text-xl font-bold sm:text-2xl">
-                              {currencyLabel
-                                ? `${currencyLabel} ${summary.totalBudgetAllotment.toLocaleString()}`
-                                : summary.totalBudgetAllotment.toLocaleString()}
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card>
-                          <CardHeader className="space-y-1 p-3 pb-2 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-sm font-medium">Remaining Spend</CardTitle>
-                            <CardDescription className="text-xs">Budget - Expenses</CardDescription>
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className={`text-xl font-bold sm:text-2xl ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {currencyLabel
-                                ? `${currencyLabel} ${remainingBudget.toLocaleString()}`
-                                : remainingBudget.toLocaleString()}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                      {summary.monthlyTrends && summary.monthlyTrends.length > 0 && (
-                        <TrendsChart data={summary.monthlyTrends} />
-                      )}
-                    </div>
-                  )}
-                  {activeView === 'pnl' && (
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                      <div>
-                        <PnlByProjectChart />
-                      </div>
-                      <div>
-                        <PnlStatement />
-                      </div>
-                    </div>
-                  )}
-                  {activeView === 'expenses' && <ExpensesByCategoryChart />}
-                  {activeView === 'sales' && <SalesBreakdownChart />}
-                  {activeView === 'budget' && <BudgetVsActualChart />}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                No summary data available for the selected scope.
-              </CardContent>
-            </Card>
-          )}
+          <PnlStatement
+            data={pnlData}
+            title="P&L Statement"
+            subtitle={selectedProjectName}
+            currencyCode={currencyCode}
+            isLoading={isLoading}
+            onExportPdf={handleExportPdf}
+          />
         </div>
       </div>
     </AuthGuard>
   );
-}
-
-export default function ReportsPage() {
-  return <ReportsPageContent />;
 }

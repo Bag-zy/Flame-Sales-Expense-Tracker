@@ -1,10 +1,13 @@
 import './globals.css'
 import { Suspense, type ReactNode } from 'react'
+import Script from 'next/script'
 import { StackProvider, StackTheme } from "@stackframe/stack";
 import { stackClientApp } from "../stack/client";
 import type { Metadata, Viewport } from 'next'
 import { AppShell } from '@/components/app-shell'
 import { ThemeProvider } from '@/components/theme-provider'
+import { CopilotProvider } from '@/components/copilot-provider'
+import { FlameAssistantProvider } from '@/lib/context/flame-assistant-context'
 // Removed NextAuth SessionProviderComponent as NextAuth has been removed from the application
 // import SessionProviderComponent from '@/components/session-provider'
 
@@ -106,19 +109,31 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <Script
+          id="__name-polyfill"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html:
+              'globalThis.__name ||= function (fn, name) { try { Object.defineProperty(fn, "name", { value: name, configurable: true }); } catch {} return fn; };',
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <StackProvider app={stackClientApp}>
-            <StackTheme>
-              <Suspense fallback={null}>
-                <AppShell>{children}</AppShell>
-              </Suspense>
-            </StackTheme>
-          </StackProvider>
+          <CopilotProvider>
+            <StackProvider app={stackClientApp}>
+              <StackTheme>
+                <Suspense fallback={null}>
+                  <FlameAssistantProvider>
+                    <AppShell>{children}</AppShell>
+                  </FlameAssistantProvider>
+                </Suspense>
+              </StackTheme>
+            </StackProvider>
+          </CopilotProvider>
         </ThemeProvider>
       </body>
     </html>

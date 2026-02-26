@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Edit, Plus } from 'lucide-react'
+import { Building2, Edit, Package, Plus, Tag } from 'lucide-react'
 
 import { useFilter } from '@/lib/context/filter-context'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import { ProductForm } from '@/components/forms/product-form'
 import { InventoryLogPanel } from '@/components/inventory/inventory-log-panel'
+import { InventoryItemDetails } from '@/components/inventory/inventory-item-details'
 
 interface VariantAttribute {
   type: string
@@ -25,6 +26,7 @@ interface ProductVariant {
   id: number
   product_id: number
   label?: string
+  sku?: string
   unit_cost?: number
   selling_price?: number
   quantity_in_stock: number
@@ -35,9 +37,12 @@ interface ProductVariant {
 
 interface Product {
   id: number
+  inventory_item_id?: number
   product_name: string
   description?: string
   sku?: string
+  unit_cost?: number
+  selling_price?: number
   quantity_in_stock: number
   reorder_level: number
   project_id?: number
@@ -63,7 +68,6 @@ export function FinishedGoodsPanel() {
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
-  const [showDetails, setShowDetails] = useState(false)
   const [detailsProduct, setDetailsProduct] = useState<Product | null>(null)
 
   const [balancesByProductVariantId, setBalancesByProductVariantId] = useState<V2BalanceByProductVariantId>(new Map())
@@ -157,11 +161,13 @@ export function FinishedGoodsPanel() {
       const map: V2BalanceByProductVariantId = new Map()
       for (const item of data.items || []) {
         for (const v of item.variants || []) {
-          const sourceProductVariantId = Number((v as any).source_product_variant_id ?? 0) || 0
-          if (!sourceProductVariantId) continue
+          // Use the primary variant ID (v.id) as the key, as this is what's 
+          // returned by the products API and used for lookups in the UI.
+          const variantId = Number(v.id || 0)
+          if (!variantId) continue
 
-          map.set(sourceProductVariantId, {
-            inventory_item_variant_id: Number(v.id),
+          map.set(variantId, {
+            inventory_item_variant_id: variantId,
             quantity_on_hand: Number(v.quantity_on_hand ?? 0) || 0,
             avg_unit_cost: v.avg_unit_cost == null ? null : (Number(v.avg_unit_cost) || null),
           })
@@ -199,14 +205,30 @@ export function FinishedGoodsPanel() {
 
   const openDetails = (p: Product) => {
     setDetailsProduct(p)
-    setShowDetails(true)
+  }
 
-    const firstVariantId = p.variants?.[0]?.id
-    if (firstVariantId) {
-      const v2 = balancesByProductVariantId.get(firstVariantId) || null
-      setLogVariantId(v2 ? v2.inventory_item_variant_id : null)
-    } else {
-      setLogVariantId(null)
+  const handleDeleteProduct = async (p: Product) => {
+    if (!window.confirm(`Are you sure you want to delete "${p.product_name}"?`)) {
+      return
+    }
+
+    try {
+      // If it has an inventory_item_id, we can technically use either API, 
+      // but let's stick to the product API for Finished Goods to ensure 
+      // both V1 and V2 tables are handled according to the product routes.
+      const res = await fetch(`/api/v1/products?id=${p.id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (data.status === 'success') {
+        toast.success('Product deleted successfully')
+        setDetailsProduct(null)
+        loadProducts()
+      } else {
+        toast.error(data.message || 'Failed to delete product')
+      }
+    } catch (error) {
+      toast.error('Failed to delete product')
     }
   }
 
@@ -304,93 +326,146 @@ export function FinishedGoodsPanel() {
     }
   }
 
-  if (!selectedProject || !selectedCycle) {
-    return <div className="text-sm text-muted-foreground">Select a project and cycle to view products.</div>
-  }
-
-  if (loading) {
-    return <div className="text-sm text-muted-foreground">Loading...</div>
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="w-full md:w-72">
-          <Input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by product name or SKU"
-          />
-        </div>
-
-        <Button
-          onClick={() => {
-            if (!selectedProject) {
-              toast.error('Please select a project before creating a product')
-              return
-            }
-            if (!selectedCycle) {
-              toast.error('Please select a cycle before creating a product')
-              return
-            }
-            setEditingProduct(null)
+      {detailsProduct ? (
+        <InventoryItemDetails
+          item={{
+            id: detailsProduct.inventory_item_id || detailsProduct.id,
+            name: detailsProduct.product_name,
+            sku: detailsProduct.sku || null,
+            uom: detailsProduct.variants?.[0]?.unit_of_measurement || 'units',
+            description: detailsProduct.description || null,
+            type_code: 'FINISHED_GOODS',
+            type_name: 'Product / Finished Good',
+            default_purchase_unit_cost: detailsProduct.unit_cost || null,
+            default_sale_price: detailsProduct.selling_price || null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            variants: (detailsProduct.variants || []).map(v => {
+              const b = balancesByProductVariantId.get(v.id)
+              return {
+                id: b ? b.inventory_item_variant_id : v.id,
+                label: v.label || 'Default',
+                sku: v.sku || detailsProduct.sku || null,
+                unit_cost: v.unit_cost || null,
+                selling_price: v.selling_price || null,
+                is_active: true,
+                quantity_on_hand: b ? b.quantity_on_hand : 0,
+                avg_unit_cost: b ? b.avg_unit_cost : null
+              }
+            })
+          } as any}
+          projectName={projects.find((p: any) => p.id.toString() === selectedProject)?.project_name}
+          cycleName={selectedCycle ? `Cycle #${selectedCycle}` : undefined}
+          onBack={() => setDetailsProduct(null)}
+          onRefresh={() => loadV2Balances()}
+          onEdit={() => {
+            setEditingProduct(detailsProduct)
             setShowForm(true)
           }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product / Finished Good
-        </Button>
-      </div>
+          onDelete={() => handleDeleteProduct(detailsProduct)}
+          currencyLabel={currentCurrencyCode}
+          hasBalances={true}
+        />
+      ) : !selectedProject || !selectedCycle ? (
+        <div className="text-sm text-muted-foreground text-center py-12 bg-card rounded-lg border border-dashed">
+          Select a project and cycle to view products.
+        </div>
+      ) : loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-3 text-sm text-muted-foreground">Loading products...</span>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="w-full md:w-72">
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by product name or SKU"
+                className="bg-card"
+              />
+            </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredProducts.map((p) => {
-          const projectName = p.project_id ? (projectNameById.get(p.project_id) || 'Unknown') : 'N/A'
-
-          const variants = Array.isArray(p.variants) ? p.variants : []
-          const totalQtyV2 = variants.reduce((sum, v) => {
-            const b = balancesByProductVariantId.get(v.id)
-            return sum + (b ? b.quantity_on_hand : 0)
-          }, 0)
-
-          return (
-            <Card key={p.id}>
-              <CardHeader className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <CardTitle className="text-lg font-semibold">{p.product_name}</CardTitle>
-                  {p.sku ? <span className="px-2 py-1 text-xs bg-muted text-foreground rounded">SKU: {p.sku}</span> : null}
-                  {variants.length > 0 ? (
-                    <span className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">{variants.length} variant{variants.length > 1 ? 's' : ''}</span>
-                  ) : null}
-                </div>
-                {p.description ? <CardDescription className="text-xs text-muted-foreground">{p.description}</CardDescription> : null}
-              </CardHeader>
-
-              <CardContent>
-                <div className="text-sm text-muted-foreground">Project: {projectName}</div>
-                <div className="text-sm text-muted-foreground">
-                  On hand (v2): {selectedProject && selectedCycle ? Number(totalQtyV2).toLocaleString() : '—'}
-                </div>
-              </CardContent>
-
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => openDetails(p)}>
-                  View
-                </Button>
-                <Button variant="outline" onClick={() => { setEditingProduct(p); setShowForm(true) }}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-              </CardFooter>
-            </Card>
-          )
-        })}
-
-        {filteredProducts.length === 0 ? (
-          <div className="col-span-full bg-card rounded-lg border border-border p-8 text-center text-muted-foreground">
-            No products found.
+            <Button
+              onClick={() => {
+                if (!selectedProject) {
+                  toast.error('Please select a project before creating a product')
+                  return
+                }
+                if (!selectedCycle) {
+                  toast.error('Please select a cycle before creating a product')
+                  return
+                }
+                setEditingProduct(null)
+                setShowForm(true)
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product / Finished Good
+            </Button>
           </div>
-        ) : null}
-      </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredProducts.map((p) => {
+              const projectName = p.project_id ? (projectNameById.get(p.project_id) || 'Unknown') : 'N/A'
+
+              const variants = Array.isArray(p.variants) ? p.variants : []
+              const totalQtyV2 = variants.reduce((sum, v) => {
+                const b = balancesByProductVariantId.get(v.id)
+                return sum + (b ? b.quantity_on_hand : 0)
+              }, 0)
+
+              return (
+                <Card key={p.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-lg font-bold truncate">{p.product_name}</CardTitle>
+                      {variants.length > 0 ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 rounded-full uppercase tracking-wider">
+                          {variants.length} Var
+                        </span>
+                      ) : null}
+                    </div>
+                    {p.sku ? (
+                      <div className="flex items-center text-[10px] text-muted-foreground font-mono">
+                        <Tag className="w-3 h-3 mr-1" /> {p.sku}
+                      </div>
+                    ) : null}
+                  </CardHeader>
+
+                  <CardContent className="pb-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Building2 className="w-3 h-3 mr-1.5 opacity-70" /> {projectName}
+                      </div>
+                      <div className="flex items-center text-sm font-medium">
+                        <Package className="w-3.5 h-3.5 mr-1.5 opacity-70" />
+                        On hand: <span className="ml-1 text-primary font-bold">{Number(totalQtyV2).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="pt-0">
+                    <Button variant="outline" onClick={() => openDetails(p)} className="w-full text-xs h-9">
+                      View Product
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )
+            })}
+
+            {filteredProducts.length === 0 ? (
+              <div className="col-span-full bg-card rounded-lg border border-dashed p-12 text-center">
+                <Package className="w-12 h-12 mx-auto text-muted-foreground opacity-20 mb-4" />
+                <p className="text-muted-foreground">No products found matching your search.</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -416,86 +491,6 @@ export function FinishedGoodsPanel() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{detailsProduct?.product_name || 'Product / Finished Good'}</DialogTitle>
-          </DialogHeader>
-
-          {detailsProduct ? (
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm text-muted-foreground">
-                  {detailsProduct.sku ? `SKU: ${detailsProduct.sku}` : null}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => openStockDialog('adjust', detailsProduct)}>
-                    Adjust Stock
-                  </Button>
-                  <Button onClick={() => openStockDialog('purchase', detailsProduct)}>Add Stock (Purchase)</Button>
-                </div>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Variants</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {(detailsProduct.variants || []).map((v) => {
-                    const b = balancesByProductVariantId.get(v.id) || null
-                    const onHand = b ? b.quantity_on_hand : 0
-                    const avgCost = b ? b.avg_unit_cost : null
-                    const invVariantId = b ? b.inventory_item_variant_id : null
-
-                    return (
-                      <div
-                        key={v.id}
-                        className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border border-border rounded-md p-3"
-                      >
-                        <div>
-                          <div className="font-medium">{v.label || 'Default variant'}</div>
-                          <div className="text-xs text-muted-foreground">
-                            On hand (v2): {selectedProject && selectedCycle ? Number(onHand).toLocaleString() : '—'}
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Avg cost: {avgCost == null ? '—' : (currentCurrencyCode ? `${currentCurrencyCode} ${Number(avgCost).toLocaleString()}` : Number(avgCost).toLocaleString())}
-                        </div>
-                        <div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLogVariantId(invVariantId)}
-                            disabled={!invVariantId}
-                          >
-                            View Log
-                          </Button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Inventory Log</CardTitle>
-                  <CardDescription>Inventory v2 movements for the selected variant</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <InventoryLogPanel inventoryItemVariantId={logVariantId} />
-                </CardContent>
-              </Card>
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDetails(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showStockDialog} onOpenChange={setShowStockDialog}>
         <DialogContent className="max-w-lg">

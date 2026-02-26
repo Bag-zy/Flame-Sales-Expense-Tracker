@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('project_id')
     const orgId = searchParams.get('org_id')
     const id = searchParams.get('id')
-    
+
     const user = await getApiOrSessionUser(request as NextRequest)
     if (!user) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
@@ -191,7 +191,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ status: 'error', message: 'Forbidden' }, { status: 403 })
       }
     }
-    
+
     let query = 'SELECT * FROM cycles WHERE organization_id = $1'
     const params: any[] = [organizationIdNum]
     let paramCount = 1
@@ -205,7 +205,7 @@ export async function GET(request: Request) {
       )`
       params.push(user.id)
     }
-    
+
     if (projectId) {
       paramCount++
       query += ` AND project_id = $${paramCount}`
@@ -217,18 +217,18 @@ export async function GET(request: Request) {
       query += ` AND id = $${paramCount}`
       params.push(id)
     }
-    
+
     query += ' ORDER BY cycle_number'
-    
+
     const result = await db.query(query, params)
-    return NextResponse.json({ 
-      status: 'success', 
-      cycles: result.rows 
+    return NextResponse.json({
+      status: 'success',
+      cycles: result.rows
     })
   } catch (error) {
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to fetch cycles' 
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to fetch cycles'
     }, { status: 500 })
   }
 }
@@ -515,16 +515,22 @@ export async function POST(request: NextRequest) {
 
       return { cycle: refreshed.rows[0] ?? createdCycle } as const
     })
-    
-    return NextResponse.json({ 
-      status: 'success', 
-      cycle: (result as any).cycle 
+
+    return NextResponse.json({
+      status: 'success',
+      cycle: (result as any).cycle
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cycle creation error:', error)
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to create cycle' 
+    if (error?.code === '23505') {
+      return NextResponse.json({
+        status: 'error',
+        message: 'A cycle with this number already exists for this project (unique constraint)'
+      }, { status: 400 })
+    }
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to create cycle'
     }, { status: 500 })
   }
 }
@@ -611,7 +617,14 @@ export async function PUT(request: NextRequest) {
       status: 'success',
       cycle: result.rows[0],
     })
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Cycle update error:', error)
+    if (error?.code === '23505') {
+      return NextResponse.json({
+        status: 'error',
+        message: 'A cycle with this number already exists for this project (unique constraint)'
+      }, { status: 400 })
+    }
     return NextResponse.json(
       {
         status: 'error',

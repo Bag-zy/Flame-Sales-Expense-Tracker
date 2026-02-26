@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
+    const id = searchParams.get('id');
 
     if (midSetup) {
       const result = await db.query('SELECT * FROM expense_category WHERE organization_id IS NULL ORDER BY category_name');
@@ -133,6 +134,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { organizationId } = user;
+
+    if (id) {
+      const result = await db.query(
+        'SELECT * FROM expense_category WHERE organization_id = $1 AND id = $2',
+        [organizationId, id]
+      );
+      return NextResponse.json({
+        status: 'success',
+        categories: result.rows,
+      });
+    }
 
     if (projectId) {
       const result = await db.query(

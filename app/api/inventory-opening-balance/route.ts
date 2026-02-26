@@ -41,9 +41,19 @@ async function assertProjectAccess(queryFn: (t: string, p?: any[]) => Promise<{ 
 export async function POST(request: NextRequest) {
   try {
     const user = await getApiOrSessionUser(request)
-    if (!user?.organizationId) {
+    if (!user) {
       return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
     }
+    const organizationId = typeof user?.organizationId === 'number'
+      ? user.organizationId
+      : parseInt(String((user as any)?.organizationId || '0'), 10) || 0
+    if (!organizationId) {
+      return NextResponse.json({ status: 'error', message: 'API key required' }, { status: 401 })
+    }
+
+    const userId = typeof user.id === 'number'
+      ? user.id
+      : parseInt(String((user as any)?.id || '0'), 10) || 0
 
     const body = await request.json()
 
@@ -58,6 +68,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: 'error', message: 'cycle_id is required' }, { status: 400 })
     }
 
+    const safeProjectId = projectId!
+    const safeCycleId = cycleId!
+
     const lines = linesRaw
       .map((l: any) => ({
         inventory_item_variant_id: toInt(l.inventory_item_variant_id),
@@ -71,8 +84,8 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await db.transaction(async (tx) => {
-      await assertProjectAccess(tx.query, user, projectId)
-      await assertCycleNotInventoryLocked(tx.query, cycleId, user.organizationId)
+      await assertProjectAccess(tx.query, user, safeProjectId)
+      await assertCycleNotInventoryLocked(tx.query, safeCycleId, organizationId)
 
       const v2Check = await tx.query(
         "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'inventory_balances' LIMIT 1",
@@ -95,7 +108,7 @@ export async function POST(request: NextRequest) {
              AND inventory_item_variant_id = $4
            LIMIT 1
           `,
-          [user.organizationId, projectId, cycleId, variantId],
+          [organizationId, safeProjectId, safeCycleId, variantId],
         )
 
         const currentQty = Number(existingBal.rows[0]?.quantity_on_hand ?? 0) || 0
@@ -103,9 +116,9 @@ export async function POST(request: NextRequest) {
         if (!delta) continue
 
         await postInventoryV2MovementByVariantId(tx.query, {
-          organizationId: user.organizationId,
-          projectId,
-          cycleId,
+          organizationId,
+          projectId: safeProjectId,
+          cycleId: safeCycleId,
           inventoryItemVariantId: variantId,
           quantityDelta: delta,
           unitCost: delta > 0 ? (l.unit_cost ?? null) : null,
@@ -113,7 +126,7 @@ export async function POST(request: NextRequest) {
           sourceType: 'opening_balance',
           sourceId: null,
           notes: null,
-          createdBy: user.id,
+          createdBy: userId,
         })
       }
 
@@ -125,7 +138,7 @@ export async function POST(request: NextRequest) {
            AND b.project_id = $2
            AND b.cycle_id = $3
         `,
-        [user.organizationId, projectId, cycleId],
+        [organizationId, safeProjectId, safeCycleId],
       )
 
       return { balances: updated.rows || [] } as const

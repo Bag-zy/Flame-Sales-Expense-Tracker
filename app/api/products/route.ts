@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
 
     const result = user.role === 'admin'
       ? await db.query(
-          `
+        `
           SELECT *
             FROM products
            WHERE organization_id = $1
@@ -189,15 +189,15 @@ export async function GET(request: NextRequest) {
              AND ($4::int IS NULL OR cycle_id = $4::int)
            ORDER BY product_name
           `,
-          [
-            organizationId,
-            id ? parseInt(id, 10) : null,
-            projectId ? parseInt(projectId, 10) : null,
-            cycleId ? parseInt(cycleId, 10) : null,
-          ]
-        )
+        [
+          organizationId,
+          id ? parseInt(id, 10) : null,
+          projectId ? parseInt(projectId, 10) : null,
+          cycleId ? parseInt(cycleId, 10) : null,
+        ]
+      )
       : await db.query(
-          `
+        `
           SELECT *
             FROM products
            WHERE organization_id = $1
@@ -217,14 +217,14 @@ export async function GET(request: NextRequest) {
              )
            ORDER BY product_name
           `,
-          [
-            organizationId,
-            user.id,
-            id ? parseInt(id, 10) : null,
-            projectId ? parseInt(projectId, 10) : null,
-            cycleId ? parseInt(cycleId, 10) : null,
-          ]
-        );
+        [
+          organizationId,
+          user.id,
+          id ? parseInt(id, 10) : null,
+          projectId ? parseInt(projectId, 10) : null,
+          cycleId ? parseInt(cycleId, 10) : null,
+        ]
+      );
 
     const productRows = result.rows;
     const productIds = productRows.map((row) => row.id);
@@ -471,7 +471,7 @@ async function fetchV2Products(args: {
 
   const balancesRes = (projectId && cycleId && variantIds.length)
     ? await db.query(
-        `
+      `
         SELECT inventory_item_variant_id, quantity_on_hand
           FROM inventory_balances
          WHERE organization_id = $1
@@ -479,8 +479,8 @@ async function fetchV2Products(args: {
            AND cycle_id = $3
            AND inventory_item_variant_id = ANY($4::int[])
         `,
-        [user.organizationId, projectId, cycleId, variantIds],
-      )
+      [user.organizationId, projectId, cycleId, variantIds],
+    )
     : { rows: [] as any[] }
 
   const qtyByVariantId = new Map<number, number>()
@@ -569,6 +569,7 @@ async function handleV2ProductsPOST(request: NextRequest, user: any) {
     unit_of_measurement: typeof v.unit_of_measurement === 'string' ? v.unit_of_measurement : null,
     images: Array.isArray(v.images) ? v.images : [],
     attributes: Array.isArray(v.attributes) ? v.attributes : [],
+    quantity: toNum(v.quantity_in_stock) || 0,
   }))
 
   const primaryVariant = variants[0] || null
@@ -578,6 +579,7 @@ async function handleV2ProductsPOST(request: NextRequest, user: any) {
   const uom = primaryVariant?.unit_of_measurement || null
   const defaultPurchaseUnitCost = primaryVariant?.unit_cost ?? null
   const defaultSalePrice = primaryVariant?.selling_price ?? null
+  const cycleId = toInt(body.cycle_id)
 
   const created = await db.transaction(async (tx) => {
     const typeRes = await tx.query("SELECT id FROM inventory_item_types WHERE code = 'FINISHED_GOODS' LIMIT 1")
@@ -633,7 +635,7 @@ async function handleV2ProductsPOST(request: NextRequest, user: any) {
 
     if (variants.length > 0) {
       for (const v of variants) {
-        await tx.query(
+        const vRes = await tx.query(
           `
           INSERT INTO inventory_item_variants (
             inventory_item_id,
@@ -646,6 +648,7 @@ async function handleV2ProductsPOST(request: NextRequest, user: any) {
             images,
             attributes
           ) VALUES ($1,$2,NULL,true,$3,$4,$5,$6::jsonb,$7::jsonb)
+          RETURNING id
           `,
           [
             itemId,
@@ -657,6 +660,61 @@ async function handleV2ProductsPOST(request: NextRequest, user: any) {
             JSON.stringify(v.attributes || []),
           ],
         )
+        const variantId = vRes.rows[0]?.id
+
+        if (variantId && v.quantity > 0 && cycleId) {
+          await tx.query(
+            `
+            INSERT INTO inventory_item_transactions (
+              organization_id,
+              project_id,
+              cycle_id,
+              inventory_item_id,
+              inventory_item_variant_id,
+              transaction_type,
+              quantity_delta,
+              unit_cost,
+              source_type,
+              source_id,
+              notes,
+              created_by
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+            `,
+            [
+              user.organizationId,
+              projectId,
+              cycleId,
+              itemId,
+              variantId,
+              'OPENING_BALANCE',
+              v.quantity,
+              v.unit_cost,
+              'product',
+              itemId,
+              'Initial stock from product creation',
+              user.id,
+            ],
+          )
+
+          await tx.query(
+            `
+            INSERT INTO inventory_balances (
+              organization_id,
+              project_id,
+              cycle_id,
+              inventory_item_variant_id,
+              quantity_on_hand,
+              avg_unit_cost
+            ) VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (organization_id, project_id, cycle_id, inventory_item_variant_id)
+            DO UPDATE SET
+              quantity_on_hand = inventory_balances.quantity_on_hand + EXCLUDED.quantity_on_hand,
+              avg_unit_cost = EXCLUDED.avg_unit_cost,
+              updated_at = NOW()
+            `,
+            [user.organizationId, projectId, cycleId, variantId, v.quantity, v.unit_cost],
+          )
+        }
       }
     } else {
       await tx.query(
@@ -1510,9 +1568,9 @@ export async function DELETE(request: NextRequest) {
       message: 'Product deleted successfully',
     });
   } catch (error) {
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to delete product' 
+    return NextResponse.json({
+      status: 'error',
+      message: 'Failed to delete product'
     }, { status: 500 })
   }
 }
