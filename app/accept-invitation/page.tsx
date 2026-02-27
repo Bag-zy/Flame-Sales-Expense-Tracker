@@ -27,7 +27,7 @@ function AcceptInvitationContent() {
 
     const validateToken = async () => {
       try {
-        const response = await fetch(`/api/accept-invitation?token=${token}`);
+        const response = await fetch(`/api/v1/accept-invitation?token=${token}`);
         const data = await response.json();
         if (response.ok) {
           setUserInfo(data.user);
@@ -49,7 +49,7 @@ function AcceptInvitationContent() {
     if (user && userInfo) {
       const activateAccount = async () => {
         try {
-          const response = await fetch('/api/accept-invitation', {
+          const response = await fetch('/api/v1/accept-invitation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token }),
@@ -111,9 +111,9 @@ function AcceptInvitationContent() {
 }
 
 export default function AcceptInvitationPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <AcceptInvitationContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AcceptInvitationContent />
+    </Suspense>
+  )
 }

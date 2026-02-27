@@ -34,7 +34,7 @@ export function TeamMembersModal({ team, users }: { team: Team; users: User[] })
 
   const fetchMembers = async () => {
     // This endpoint doesn't exist yet, but we'll assume it will.
-    const response = await fetch(`/api/teams/${team.id}/members`)
+    const response = await fetch(`/api/v1/teams/${team.id}/members`)
     const data = await response.json()
     if (data.status === 'success') {
       setMembers(data.members)
@@ -42,7 +42,7 @@ export function TeamMembersModal({ team, users }: { team: Team; users: User[] })
   }
 
   const handleAddMember = async () => {
-    const response = await fetch('/api/team-members', {
+    const response = await fetch('/api/v1/team-members', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ team_id: team.id, user_id: selectedUser }),
@@ -57,7 +57,7 @@ export function TeamMembersModal({ team, users }: { team: Team; users: User[] })
   }
 
   const handleRemoveMember = async (userId: number) => {
-    const response = await fetch('/api/team-members', {
+    const response = await fetch('/api/v1/team-members', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ team_id: team.id, user_id: userId }),

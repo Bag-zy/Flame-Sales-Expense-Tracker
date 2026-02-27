@@ -55,7 +55,7 @@ export function FlameAssistantProvider({ children }: { children: React.ReactNode
   const refreshContext = React.useCallback(async () => {
     try {
       // Get user's organization
-      const orgResponse = await fetch('/api/organizations');
+      const orgResponse = await fetch('/api/v1/organizations');
       const orgData = await orgResponse.json();
 
       let activeOrgId = '';
@@ -66,14 +66,14 @@ export function FlameAssistantProvider({ children }: { children: React.ReactNode
         activeOrgId = String(orgData.organizations[0].id);
 
         // Get projects for this org
-        const projResponse = await fetch(`/api/projects?org_id=${activeOrgId}`);
+        const projResponse = await fetch(`/api/v1/projects?org_id=${activeOrgId}`);
         const projData = await projResponse.json();
 
         if (projData.status === 'success' && projData.projects?.length > 0) {
           activeProjId = String(projData.projects[0].id);
 
           // Get cycles for this project
-          const cycleResponse = await fetch(`/api/cycles?project_id=${activeProjId}`);
+          const cycleResponse = await fetch(`/api/v1/cycles?project_id=${activeProjId}`);
           const cycleData = await cycleResponse.json();
 
           if (cycleData.status === 'success' && cycleData.cycles?.length > 0) {
